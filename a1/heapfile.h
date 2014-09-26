@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "record.h"
 #include "page.h"
 
@@ -36,4 +38,4 @@ class RecordIterator {
     RecordIterator(Heapfile *heapfile);
     Record next();
     bool hasNext();
-}
+};
