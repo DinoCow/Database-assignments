@@ -60,3 +60,11 @@ clean:
 
 tar:
 	tar cfv pl1.tar $(SOURCES) $(HEADERS)
+
+
+# Not sure if I want to keep the tests.
+test: tests/test_record
+	tests/test_record
+
+tests/test_record: tests/test_record.o record.o
+	$(CC) $(CFLAGS) $^ -o $@
