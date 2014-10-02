@@ -55,6 +55,12 @@ select2: select2.o $(LIBRARY)
 select3: select3.o $(LIBRARY)
 	$(CC) $(CFLAGS) $^ -o $@
 
+tests/test_record: tests/test_record.o record.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+tests/test_page: tests/test_page.o page.o
+	$(CC) $(CFLAGS) $^ -o $@
+
 clean:
 	$(RM) *.o *~ $(TARGET) pl1.tar
 
@@ -63,8 +69,8 @@ tar:
 
 
 # Not sure if I want to keep the tests.
-test: tests/test_record
-	tests/test_record
+test: tests/test_record 
+	tests/test_record 
 
-tests/test_record: tests/test_record.o record.o
-	$(CC) $(CFLAGS) $^ -o $@
+test2: tests/test_page
+	tests/test_page
