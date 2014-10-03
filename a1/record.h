@@ -1,3 +1,6 @@
+#ifndef RECORD_H
+#define RECORD_H
+
 #include <vector>
 
 typedef const char* V;
@@ -19,3 +22,5 @@ void fixed_len_write(Record *record, void *buf);
  * stores the record in `record`.
  */
 void fixed_len_read(void *buf, int size, Record *record);
+
+#endif

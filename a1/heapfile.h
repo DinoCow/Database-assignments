@@ -1,3 +1,6 @@
+#ifndef HEAPFILE_H
+#define HEAPFILE_H
+
 #include <stdio.h>
 
 #include "record.h"
@@ -39,3 +42,5 @@ class RecordIterator {
     Record next();
     bool hasNext();
 };
+
+#endif
