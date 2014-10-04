@@ -1,16 +1,18 @@
 //#include <cstring>
-//#include <cassert>
+#include <cassert>
 //#include <cstdio>
 #include <iostream>
 #include "page.h"
 #include <math.h> // ceil
 
-using namespace std; // Get rid of this later...
 /**
  * Initializes a page using the given slot size
  */
 void init_fixed_len_page(Page *page, int page_size, int slot_size) {
 	
+	assert (page_size > 0);
+	assert (slot_size > 0 && slot_size < page_size);
+
 	page->page_size = page_size;
 	page->slot_size = slot_size;
 	page->data = new char[page_size](); // () initializes array
@@ -31,14 +33,13 @@ int fixed_len_page_capacity(Page *page) {
 int fixed_len_page_freeslots(Page *page) {
 
 	int numRecs = fixed_len_page_capacity(page);
-	int result = 0, counter = 0;
+	int result = 0, counter = 0, numBytes = (ceil)(numRecs / 8.0);;
 
-	// (ceil) numRecs/8.0 - getting the number of bytes
 	// Iterating over byte first to make it easier to understand 
-	for (int i = 1; i <= ((ceil)(numRecs / 8.0)); i++)
+	for (int i = 1; i <= numBytes; i++)
 	{
-		int temp = page->page_size - i;
-		char charVal = ((char *)page->data)[temp];
+		int idx = page->page_size - i;
+		char charVal = ((char *)page->data)[idx];
 		for (int bit = 0; bit < 8; bit++)
 		{
 			// Because iterating over bytes, make sure we don't go
@@ -49,6 +50,7 @@ int fixed_len_page_freeslots(Page *page) {
 				charVal >>= 1;
 				counter++;
 			}
+			else { break; }
 		}
 	}
 	return numRecs - result;
@@ -61,20 +63,66 @@ int fixed_len_page_freeslots(Page *page) {
  *   -1 if unsuccessful (page full)
  */
 int add_fixed_len_page(Page *page, Record *r) {
-	//TODO
-	return 0;
+	
+	int numRecs = fixed_len_page_capacity(page);
+	int idx = 0, counter = 0, slot = -1, numBytes = (ceil)(numRecs / 8.0);
+
+
+	// Get the first empty slot
+	for (int i = 1; i <= numBytes; i++)
+	{
+		idx = page->page_size - i;
+		char charVal = ((char *)page->data)[idx];
+		for (int bit = 0; bit < 8; bit++)
+		{
+			// Because iterating over bytes, make sure we don't go
+			// past the record directory
+			if (counter < numRecs)
+			{
+				// Stop searching once an empty slot has been found
+				if (!(charVal & 0x01))
+				{
+					slot = counter;
+					break;
+				}
+				charVal >>= 1;
+				counter++;
+			}
+			else { break; }
+		}
+
+		// Stop searching once an empty slot has been found
+		if (slot >= 0)
+			break;
+	}
+
+	// Write the record onto the page
+	if (slot >= 0)
+	{
+		write_fixed_len_page(page, slot, r);
+	}
+
+	return slot;
 }
 
 /**
  * Write a record into a given slot.
  */
 void write_fixed_len_page(Page *page, int slot, Record *r) {
-	//TODO
+	
+	assert (slot >= 0);
+	fixed_len_write(r, ((char*)page->data + (slot*page->slot_size)));
+
+	// Make sure the slot flag is 1
+	int idx = page->page_size - (ceil)((slot+1) / 8.0);
+	((char *)page->data)[idx] |= 1 << (slot % 8);
 }
 
 /**
  * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r) {
-	//TODO
+	
+	assert (slot >= 0);
+	fixed_len_read(((char*)page->data + (slot*page->slot_size)), page->slot_size, r);
 }

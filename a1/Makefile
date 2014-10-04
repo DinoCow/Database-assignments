@@ -58,7 +58,7 @@ select3: select3.o $(LIBRARY)
 tests/test_record: tests/test_record.o record.o
 	$(CC) $(CFLAGS) $^ -o $@
 
-tests/test_page: tests/test_page.o page.o
+tests/test_page: tests/test_page.o page.o record.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
