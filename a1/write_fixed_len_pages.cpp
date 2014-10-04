@@ -79,7 +79,9 @@ int main(int argc, char *argv[])
 			if (page) {	// page is full
 				fwrite(page->data, sizeof(char), page_size,
 				       page_file);
-				//TODO: Free page here
+				//Free page here
+        delete[] (char*)page->data;
+        delete page;
 			}
 			page = new Page;
 			init_fixed_len_page(page, page_size, SLOT_SIZE);
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
 		//Free char arrays in record
 		for (int i = 0; i < rec.size(); i++) {
 			//printf("attr:%s\n", rec[i]);
-			delete[]rec[i];
+			delete[] rec[i];
 		}
 	}
 

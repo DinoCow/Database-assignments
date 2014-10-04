@@ -55,6 +55,12 @@ select2: select2.o $(LIBRARY)
 select3: select3.o $(LIBRARY)
 	$(CC) $(CFLAGS) $^ -o $@
 
+write_fixed_len_pages: write_fixed_len_pages.o page.o record.o
+	$(CC) $(CFLAGS) $^ -o $@
+
+read_fixed_len_pages: read_fixed_len_pages.o page.o record.o
+	$(CC) $(CFLAGS) $^ -o $@
+
 tests/test_record: tests/test_record.o record.o
 	$(CC) $(CFLAGS) $^ -o $@
 
