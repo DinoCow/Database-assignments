@@ -5,10 +5,15 @@
 
 #include "record.h"
 #include "page.h"
+#include "directory.h"
+#include "directoryentry.h"
+
+const int SLOTSIZE = 1000;
 
 typedef struct {
     FILE *file_ptr;
     int page_size;
+    int num_pages;
 } Heapfile;
 
 typedef int PageID;
@@ -17,6 +22,12 @@ typedef struct {
     int page_id;
     int slot;
 } RecordID;
+
+typedef struct{
+	int offset;
+	int free_space;
+} PageEntry;
+
 
 /**
  * Initalize a heapfile to use the file and page size given.
