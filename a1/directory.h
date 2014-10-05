@@ -1,45 +1,32 @@
 #ifndef DIRECTORY_H
 #define DIRECTORY_H
 
-#include "directoryentry.h"
+typedef struct{
+	int offset;
+	int free_space;
+} Entry;
 
 typedef struct{
-	int page_size;
-	void *data;
+	int capacity;
+	int n_entries;
+	int* next_directory;
+	Entry* entries;
+	void* data;
 } Directory;
 
 /**
- * Initializes a directory using the entry size
+ * Initializes a directory using the given page size
  */
-void init_fixed_len_page(Directory *directory, int page_size);
+void init_directory_page(Directory *directory, int page_size);
+
+bool directory_is_full(Directory* directory);
 
 /**
- * Calculates the maximal number of records that fit in a directory
+ * Append an empty entry to directory and return its pointer
  */
-int fixed_len_page_capacity(Directory *directory);
- 
+Entry* next_entry(Directory* directory);
 /**
- * Calculate the free space (number of free slots) in the directory
+ * Find a page in the directory with some free space
  */
-int fixed_len_page_freeslots(Directory *directory);
- 
-/**
- * Add a entry to the directory
- * Returns:
- *   entry slot offset if successful,
- *   -1 if unsuccessful (directory full)
- */
-int add_fixed_len_page(Directory *directory, DirectoryEntry *entry);
- 
-/**
- * Write a entry into a given slot.
- */
-void write_fixed_len_page(Directory *directory, int slot, DirectoryEntry *entry);
- 
-/**
- * Read a entry from the directory from a given slot.
- */
-void read_fixed_len_page(Directory *directory, int slot, DirectoryEntry *entry);
-
-
+Entry* find_free_page(Directory* directory);
 #endif

@@ -1,1 +1,43 @@
 #include "directory.h"
+
+/**
+ * Initializes a directory using the given page size
+ */
+void init_directory_page(Directory *directory, int page_size){
+	// sizeof(int) is the size of next_directory
+	int capacity = (page_size - sizeof(int)) / sizeof(Entry);
+	assert (capacity > 0);
+
+	directory->data = new char[page_size]();
+	directory->capacity = capacity;
+	directory->n_entries = 0;
+	directory->next_directory = directory->data;
+	directory->entries = directory->data + sizeof(int);
+}
+
+bool directory_is_full(Directory* directory){
+	return (directory->n_entries == directory->capacity);
+}
+
+/**
+ * Append an empty entry to directory and return its pointer
+ */
+Entry* next_entry(Directory* directory){
+	if (directory_is_full(directory){
+		return NULL;
+	}
+	directory->n_entries++;
+	return directory->entries[directory->n_entries];
+}
+
+/**
+ * Find a page in the directory with some free space
+ */
+Entry* find_free_page(Directory* directory){
+	for(int i=0; i<directory->n_entries; i++){
+		if (directory->entries[i].free_space > 0) {
+			return directory->entries[i];
+		}	
+	}
+	return NULL;
+}
