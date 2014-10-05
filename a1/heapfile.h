@@ -23,12 +23,6 @@ typedef struct {
     int slot;
 } RecordID;
 
-typedef struct{
-	int offset;
-	int free_space;
-} PageEntry;
-
-
 /**
  * Initalize a heapfile to use the file and page size given.
  */
