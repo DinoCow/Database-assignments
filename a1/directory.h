@@ -8,7 +8,7 @@ typedef struct{
 
 typedef struct{
 	int capacity;
-	int n_entries;
+	int* n_entries;
 	int* next_directory;
 	Entry* entries;
 	void* data;
@@ -18,6 +18,11 @@ typedef struct{
  * Initializes a directory using the given page size
  */
 void init_directory_page(Directory *directory, int page_size);
+
+/**
+ * Initializes a directory using the given page size and data
+ */
+void init_directory_page(Directory *directory, int page_size, char *data);
 
 bool directory_is_full(Directory* directory);
 
