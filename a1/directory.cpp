@@ -5,14 +5,30 @@
  */
 void init_directory_page(Directory *directory, int page_size){
 	// sizeof(int) is the size of next_directory
-	int capacity = (page_size - sizeof(int)) / sizeof(Entry);
+	int capacity = (page_size - sizeof(int) * 2) / sizeof(Entry);
+	assert (capacity > 0);
+	
+	directory->data = new char[page_size]();
+	directory->n_entries = directory->data + sizeof(int);
+	*directory->n_entries = 0;
+	directory->capacity = capacity;
+	directory->next_directory = directory->data;
+	directory->entries = directory->data + sizeof(int) * 2;
+}
+
+/**
+ * Initializes a directory using the given page size and data
+ */
+void init_directory_page(Directory *directory, int page_size, char *data){
+		// sizeof(int) is the size of next_directory
+	int capacity = (page_size - sizeof(int) * 2) / sizeof(Entry);
 	assert (capacity > 0);
 
-	directory->data = new char[page_size]();
+	directory->data = data;
+	directory->n_entries = directory->data + sizeof(int);
 	directory->capacity = capacity;
-	directory->n_entries = 0;
 	directory->next_directory = directory->data;
-	directory->entries = directory->data + sizeof(int);
+	directory->entries = directory->data + sizeof(int) * 2;
 }
 
 bool directory_is_full(Directory* directory){
