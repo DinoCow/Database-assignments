@@ -64,7 +64,6 @@ int main(int argc, char *argv[])
 	long start = get_time_ms();
 
 	Page *page = NULL;
-	int num_rec = 0;
 
 	char line[LINE_MAX];
 
