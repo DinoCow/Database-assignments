@@ -14,7 +14,7 @@
 
 using namespace std;
 const int SLOT_SIZE = 1000;	// Size of a record
-const int LINE_MAX = 10000;
+const int MAX_LINE_LEN = 10000;
 
 /*
  * Split line on ',' and insert tokens into record
@@ -60,9 +60,9 @@ int main(int argc, char *argv[])
 
 	Page *page = NULL;
 
-	char line[LINE_MAX];
+	char line[MAX_LINE_LEN];
 
-	while (fgets(line, LINE_MAX, csv_file)) {
+	while (fgets(line, MAX_LINE_LEN, csv_file)) {
 		Record rec;
 		// split csv and push into record
 		load_record(&rec, line);

@@ -3,10 +3,17 @@
 #include "record.h"
 #include "page.h"
 
+#include <sys/timeb.h>
 #include <vector>
 
 using namespace std;
 const int SLOT_SIZE = 1000;	// Size of a record
+long get_time_ms()
+{
+	struct timeb t;
+	ftime(&t);
+	return t.time * 1000 + t.millitm;
+}
 
 int main(int argc, char *argv[])
 {
@@ -26,6 +33,7 @@ int main(int argc, char *argv[])
 		return (1);
 	}
 
+	long start = get_time_ms();
 	Page *page = NULL;
 	char line[page_size];
 
@@ -66,4 +74,6 @@ int main(int argc, char *argv[])
 	}
 
 	fclose(page_file);
+	long end = get_time_ms();
+	cout << "TIME: " << end - start << " milliseconds" << endl;
 }
