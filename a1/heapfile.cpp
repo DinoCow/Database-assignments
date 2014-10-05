@@ -15,12 +15,17 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 	//create the directory page
 	char buf[page_size];
 
+	Directory *directory = new Directory;
+	init_directory_page(directory, page_size);
+
+	buf = directory->data;
+
 	FILE *fp = fopen(file, "w");
 	if (!fp) {
         printf("can not open heapfile\n");
         return;   // bail out ?
     }
-    bzero(buf, page_size);
+
     fwrite(buf, 1, page_size, fp);
     fflush(fp);
     fclose(fp);
@@ -33,36 +38,50 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
  */
 PageID alloc_page(Heapfile *heapfile){
 	
-	//TODO
-	//check if there is space in the directory page first.
-
- 	Page *page = new Page; 	
- 	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
-
- 	PageID pid = heapfile->num_pages;
-
- 	//should we calculate this ahead of time in the init?
-	int free_slots = fixed_len_page_freeslots(page);
-	
-	PageEntry page_entry = new PageEntry;
-	page_entry->offset = 
-	page_entry->free_space =
-
-	FILE *fp = fopen(heapfile->file_ptr, "a");
+	FILE *fp = fopen(heapfile->file_ptr, "r+");
 	if (!fp) {
         printf("can not open heapfile\n");
         return;   // bail out ?
     }
 
-    fsee
+	char buf[heapfile->page_size];
 
-    //write the page 
+	result = fread(buf,1,heapfile->page_size,fp);
+	if(result != heapfile->page_size) { 
+		printf("panic panic, can't read directory \n");
+		return;
+	}
 
-	//write page_offset, freespace at the end of the heapfile
+	Directory *directory = new Directory;
+	init_directory_page(directory, heapfile->page_size, buf);
 
-	//close file
+	Page *page = new Page; 	
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	
+	//allocate an entry
+	Entry* entry = next_entry(directory);
+	fseek(file, 0, SEEK_END);
 
-	//return the PageID
+	if(entry == NULL){
+		//need to check if this directory has called another
+		directory->next_directory = ftell(fp);
+		//allocate new heap page
+		Directory *new_directory = new Directory;
+		init_directory_page(new_directory, heapfile->page_size);
+
+		buf = new_directory->data;
+    	entry = next_entry(new_directory);
+    }
+
+    fwrite(buf, 1, heapfile->page_size, fp);
+
+    int entry->offset = ftell(fp);
+    int entry->free_space = fixed_len_page_freeslots(page);
+
+    buf = page->data;
+    fwrite(buf, 1, heapfile->page_size, fp);
+
+	fclose(fp);
  	
 }
 
