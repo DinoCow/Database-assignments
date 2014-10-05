@@ -6,7 +6,6 @@
 #include "record.h"
 #include "page.h"
 #include "directory.h"
-#include "directoryentry.h"
 
 const int SLOTSIZE = 1000;
 

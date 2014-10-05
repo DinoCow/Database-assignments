@@ -15,11 +15,17 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 	//create the directory page
 	char buf[page_size];
 
+	Directory *directory = new Directory;
+	init_directory_page(directory, page_size);
+
+	buf = directory->data
+
 	FILE *fp = fopen(file, "w");
 	if (!fp) {
         printf("can not open heapfile\n");
         return;   // bail out ?
     }
+
     bzero(buf, page_size);
     fwrite(buf, 1, page_size, fp);
     fflush(fp);
@@ -33,8 +39,8 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
  */
 PageID alloc_page(Heapfile *heapfile){
 	
-	//TODO
-	//check if there is space in the directory page first.
+	FILE *fp = fopen(heapfile->file_ptr, "a");
+
 
  	Page *page = new Page; 	
  	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
