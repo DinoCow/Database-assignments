@@ -9,7 +9,7 @@ HEADERS = $(wildcard *.h)
 OBJECTS = $(SOURCES:.cpp=.o)
 
 LIBRARY = record.o page.o heapfile.o
-TARGET = csv2heapfile scan insert update delete select csv2colstore select2 select3
+TARGET = csv2heapfile scan insert update delete select csv2colstore select2 select3 write_fixed_len_pages read_fixed_len_pages
 
 .PHONY: clean
 all: $(TARGET)
