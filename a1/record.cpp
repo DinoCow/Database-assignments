@@ -65,3 +65,24 @@ void print_record_as_csv(Record *record) {
 	}
 	std::cout << (*record)[num_rec-1] << std::endl;
 }
+
+/*
+ * Split line on ',' and insert tokens into record
+ */
+void load_csv_record(Record * record, char line[])
+{
+	char *token;
+	char *attribute;
+	token = strtok(line, ",");
+	while (token != NULL) {
+		//printf ("%s\n",token);
+		attribute = new char[ATTRIBUTE_SIZE + 1];
+
+		strncpy(attribute, token, ATTRIBUTE_SIZE);
+		attribute[ATTRIBUTE_SIZE] = '\0';
+		record->push_back(attribute);
+
+		token = strtok(NULL, ",");
+	}
+	assert(record->size() == 100);	// I think...
+}

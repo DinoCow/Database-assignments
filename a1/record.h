@@ -28,4 +28,8 @@ void fixed_len_read(void *buf, int size, Record *record);
  */
 void print_record_as_csv(Record *record);
 
+/*
+ * Split line on ',' and insert tokens into record
+ */
+void load_csv_record(Record * record, char line[])
 #endif
