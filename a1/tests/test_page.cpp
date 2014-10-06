@@ -163,6 +163,10 @@ int main(int argc, char** argv) {
 
 	//--------------------------------------
 	//--- Tests for reading record ---//
+
+	// If this is called, it should break the validity of read
+	//((char*)page.data)[page.page_size - 1] = 'w';
+	
 	Record rec3(100);
 	read_fixed_len_page(&page, 0, &rec3);
 	for (unsigned int i=0; i<rec3.size(); i++) {

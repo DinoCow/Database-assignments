@@ -124,7 +124,12 @@ void write_fixed_len_page(Page *page, int slot, Record *r) {
 void read_fixed_len_page(Page *page, int slot, Record *r) {
 	
 	assert (slot >= 0);
-	//TODO: should check that this record is valid, based on the "slot flag"
+
+	// Check record is valid before being read
+	int idx = page->page_size - (ceil)((slot+1) / 8.0);
+	int valid = ((char *)page->data)[idx] & (1 << (slot % 8));
+	assert (valid > 0);
+
 	char (*records)[page->slot_size] = (char(*)[page->slot_size])page->data;
 	fixed_len_read(records[slot], page->slot_size, r);
 }
