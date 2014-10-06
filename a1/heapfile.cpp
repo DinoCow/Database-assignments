@@ -18,8 +18,6 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 	write_directory(heapfile, 0, directory);
 
     heapfile->num_pages = 1;
-
-    free(directory);
 }
 
 /**
@@ -53,11 +51,6 @@ PageID alloc_page(Heapfile *heapfile){
 
     heapfile->num_pages++;
 
-    //free allocated memory
-    free(entry);
-    free(page);
-    free(directory);
-
 	return pid;
 }
 
@@ -88,7 +81,6 @@ void get_next_entry(Heapfile *heapfile, Directory *directory, int *directory_off
 		directory = new_directory;
 		entry = next_entry(new_directory);
 
-		free(new_directory);
 	} else {
 		entry = next_entry(directory);
 	}
