@@ -31,9 +31,9 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
  */
 PageID alloc_page(Heapfile *heapfile);
 
-Entry* get_next_entry(Heapfile *heapfile, Directory *directory, FILE *fp, int *offset);
+Entry* get_next_entry(Heapfile *heapfile, Directory *directory, int *offset);
 
-Directory* read_directory(Heapfile *heapfile, int offset, FILE *fp);
+Directory* read_directory(Heapfile *heapfile, int offset);
 
 /**
  * Read a page into memory

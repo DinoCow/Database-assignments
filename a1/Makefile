@@ -8,7 +8,7 @@ SOURCES = $(wildcard *.cpp)
 HEADERS = $(wildcard *.h)
 OBJECTS = $(SOURCES:.cpp=.o)
 
-LIBRARY = record.o page.o heapfile.o
+LIBRARY = record.o page.o directory.o heapfile.o
 TARGET = csv2heapfile scan insert update delete select csv2colstore select2 select3 write_fixed_len_pages read_fixed_len_pages
 
 .PHONY: clean
@@ -22,6 +22,9 @@ record.o: record.cpp record.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 page.o: page.cpp page.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+directory.o: directory.cpp directory.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 heapfile.o: heapfile.cpp heapfile.h
