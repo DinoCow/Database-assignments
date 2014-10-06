@@ -29,16 +29,16 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 PageID alloc_page(Heapfile *heapfile){
 	int directory_offset = 0;
 	Entry *entry = new Entry;
+	Page *page = new Page; 	
+	Directory *directory = new Directory;
 
 	//point to start of file and read first directory
 	fseek(heapfile->file_ptr, 0, SEEK_SET);
-	Directory *directory = new Directory;
 	read_directory(heapfile, 0, directory);
 	
 	get_next_entry(heapfile, directory, &directory_offset, entry);
 
 	//Create the new page
-	Page *page = new Page; 	
 	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
 
 	//assign entry pointers
@@ -70,9 +70,10 @@ void get_next_entry(Heapfile *heapfile, Directory *directory, int *directory_off
 		fseek(heapfile->file_ptr, 0, SEEK_END);
 		*directory->next_directory = ftell(heapfile->file_ptr);
 
+		//write out with pointer to the new directory
 		write_directory(heapfile, *directory_offset, directory);
 		
-		//add a new directory
+		//add a new directory this will be written out in alloc_page
 		Directory *new_directory = new Directory;
 		init_directory_page(new_directory, heapfile->page_size);
 		
