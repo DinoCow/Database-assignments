@@ -36,6 +36,11 @@ PageID alloc_page(Heapfile *heapfile);
  */
 void get_next_entry(Heapfile *heapfile, Directory *directory, int *offset, Entry* entry);
 
+/**
+ * Write a directory into disk from memory
+ */
+void write_directory(Heapfile *heapfile, int offset, Directory *directory);
+
 /*
  * read a directory into memory 
  */
