@@ -10,8 +10,7 @@
  */
 void init_fixed_len_page(Page *page, int page_size, int slot_size) {
 	
-	assert (page_size > 0);
-	assert (slot_size > 0 && slot_size < page_size);
+	assert (0 < slot_size && slot_size < page_size);
 
 	page->page_size = page_size;
 	page->slot_size = slot_size;
@@ -23,8 +22,8 @@ void init_fixed_len_page(Page *page, int page_size, int slot_size) {
  */
 int fixed_len_page_capacity(Page *page) {
 
-	double directorySize = page->page_size/page->slot_size/8;
-	return (int)(page->page_size - directorySize)/page->slot_size;
+	int directorySize = ceil(page->page_size/page->slot_size/8.0);
+	return (page->page_size - directorySize)/page->slot_size;
 }
 
 /**
@@ -111,7 +110,8 @@ int add_fixed_len_page(Page *page, Record *r) {
 void write_fixed_len_page(Page *page, int slot, Record *r) {
 	
 	assert (slot >= 0);
-	fixed_len_write(r, ((char*)page->data + (slot*page->slot_size)));
+	char (*records)[page->slot_size] = (char(*)[page->slot_size])page->data;
+	fixed_len_write(r, records[slot]);
 
 	// Make sure the slot flag is 1
 	int idx = page->page_size - (ceil)((slot+1) / 8.0);
@@ -124,5 +124,7 @@ void write_fixed_len_page(Page *page, int slot, Record *r) {
 void read_fixed_len_page(Page *page, int slot, Record *r) {
 	
 	assert (slot >= 0);
-	fixed_len_read(((char*)page->data + (slot*page->slot_size)), page->slot_size, r);
+	//TODO: should check that this record is valid, based on the "slot flag"
+	char (*records)[page->slot_size] = (char(*)[page->slot_size])page->data;
+	fixed_len_read(records[slot], page->slot_size, r);
 }
