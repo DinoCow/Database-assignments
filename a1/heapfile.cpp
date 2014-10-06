@@ -15,7 +15,7 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 	//create the directory page
 	Directory *directory = new Directory;
 	init_directory_page(directory, page_size);
-
+	// fseek to beginning of file just in case?
  	fwrite(directory->data, 1, page_size, file);
 
     fflush(file);
@@ -95,7 +95,7 @@ void write_directory(Heapfile *heapfile, int offset, Directory *directory){
 	int result = fwrite(directory->data, 1, heapfile->page_size, heapfile->file_ptr);
 
 	if (result != heapfile->page_size){
-		printf("panic panic, can't read page");
+		printf("panic panic, can't write page");
 	}
 
 	fflush(heapfile->file_ptr);
@@ -152,17 +152,17 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
 }
 
 /**
- * get the page offset from the direcotry 
+ * get the page offset from the directory
  */
 int get_page_offset(Heapfile *heapfile, PageID pid){
 	fseek(heapfile->file_ptr, pid, SEEK_SET);
-	char buf[sizeof(int)];
+	int page_offset;
 
-	int result = fread(buf, 1, sizeof(int), heapfile->file_ptr);
+	int result = fread(&page_offset, 1, sizeof(int), heapfile->file_ptr);
 	if(result != sizeof(int)){
 		printf("panic panic, can't read Entry \n");
 	}
 
-	return *buf;
+	return page_offset;
 }
 
