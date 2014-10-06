@@ -17,6 +17,10 @@ void init_fixed_len_page(Page *page, int page_size, int slot_size) {
 	page->data = new char[page_size](); // () initializes array
 }
 
+void free_page(Page *page) {
+	delete[](char *)page->data;
+	delete page;
+}
 /**
  * Calculates the maximal number of records that fit in a page
  */

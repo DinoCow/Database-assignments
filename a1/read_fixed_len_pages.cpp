@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 #include "record.h"
 #include "page.h"
 
@@ -9,6 +10,7 @@
 using namespace std;
 const int NUM_ATTR = 100; // Number of attributes
 const int SLOT_SIZE = 1000;	// Size of a record
+
 long get_time_ms()
 {
 	struct timeb t;
@@ -52,18 +54,8 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < numRecs; i++)
 		{
 			read_fixed_len_page(page, i, &rec);
-
 			// Output the record as a csv
-			for (Record::iterator it = rec.begin(); it!=rec.end() && !rec.empty(); ++it) 
-			{
-				// Append the comma before every element but the first
-				if(it!=rec.begin()) {
-				    cout << ",";
-				}
-
-				cout << *it;
-			}
-			cout << endl;
+			print_record_as_csv(&rec);
 		}
 
 		//Free char arrays in record

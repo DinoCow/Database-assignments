@@ -1,6 +1,7 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <iostream>
 #include "record.h"
 
 
@@ -52,4 +53,15 @@ void fixed_len_read(void *buf, int size, Record *record) {
 
 		src += ATTRIBUTE_SIZE;
 	}
+}
+
+/*
+ * Print a record in csv format
+ */
+void print_record_as_csv(Record *record) {
+	size_t num_rec = record->size();
+	for (int i=0; i<num_rec-1; i++){
+		std::cout << (*record)[i] <<",";
+	}
+	std::cout << (*record)[num_rec-1] << std::endl;
 }

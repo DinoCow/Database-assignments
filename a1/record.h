@@ -23,4 +23,9 @@ void fixed_len_write(Record *record, void *buf);
  */
 void fixed_len_read(void *buf, int size, Record *record);
 
+/*
+ * Print a record in csv format
+ */
+void print_record_as_csv(Record *record);
+
 #endif
