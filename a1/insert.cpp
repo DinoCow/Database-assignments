@@ -13,7 +13,6 @@
 #include <vector>
 
 using namespace std;
-const int SLOT_SIZE = 1000;	// Size of a record
 const int MAX_LINE_LEN = 10000;
 
 /*
@@ -98,8 +97,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// Write the last page to file.                         
-	PageID pid = alloc_page(&heapfile);
+	// Write the last page to file. 
 	write_page(page, &heapfile, pid);
 	fclose(csv_file);
 	fclose(heapfd);
