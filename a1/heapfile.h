@@ -31,9 +31,15 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
  */
 PageID alloc_page(Heapfile *heapfile);
 
-Entry* get_next_entry(Heapfile *heapfile, Directory *directory, int *offset);
+/**
+ * Get the next entry that can be allocated from directory
+ */
+void get_next_entry(Heapfile *heapfile, Directory *directory, int *offset, Entry* entry);
 
-Directory* read_directory(Heapfile *heapfile, int offset);
+/*
+ * read a directory into memory 
+ */
+void read_directory(Heapfile *heapfile, int offset, Directory *directory);
 
 /**
  * Read a page into memory
@@ -43,6 +49,11 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page);
  * Write a page from memory to disk
  */
 void write_page(Page *page, Heapfile *heapfile, PageID pid); 
+
+/**
+ * get the page offset from the direcotry 
+ */
+int get_page_offset(Heapfile *heapfile, PageID pid);
 
 class RecordIterator {
     public:
