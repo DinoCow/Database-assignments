@@ -7,6 +7,7 @@
 #include <vector>
 
 using namespace std;
+const int NUM_ATTR = 100; // Number of attributes
 const int SLOT_SIZE = 1000;	// Size of a record
 long get_time_ms()
 {
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
 		init_fixed_len_page(page, page_size, SLOT_SIZE);
 		page->data = line;
 
-		Record rec(100);
+		Record rec(NUM_ATTR);
 		int numRecs = fixed_len_page_capacity(page) - fixed_len_page_freeslots(page);
 		
 		// Iterate over the records
