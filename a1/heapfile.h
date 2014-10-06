@@ -30,6 +30,11 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
  * Allocate another page in the heapfile.  This grows the file by a page.
  */
 PageID alloc_page(Heapfile *heapfile);
+
+Entry* get_next_entry(Heapfile *heapfile, Directory *directory, FILE *fp, int *offset);
+
+Directory* read_directory(Heapfile *heapfile, int offset, FILE *fp);
+
 /**
  * Read a page into memory
  */
@@ -38,7 +43,6 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page);
  * Write a page from memory to disk
  */
 void write_page(Page *page, Heapfile *heapfile, PageID pid); 
-
 
 class RecordIterator {
     public:

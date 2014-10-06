@@ -24,14 +24,19 @@ void init_directory_page(Directory *directory, int page_size);
  */
 void init_directory_page(Directory *directory, int page_size, char *data);
 
-bool directory_is_full(Directory* directory);
+/**
+ * Check if the directory is full
+ */
+bool directory_is_full(Directory *directory);
 
 /**
  * Append an empty entry to directory and return its pointer
  */
-Entry* next_entry(Directory* directory);
+Entry* next_entry(Directory *directory);
+
 /**
  * Find a page in the directory with some free space
  */
-Entry* find_free_page(Directory* directory);
+Entry* find_free_page(Directory *directory);
+
 #endif
