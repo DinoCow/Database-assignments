@@ -14,7 +14,6 @@
 
 using namespace std;
 const int SLOT_SIZE = 1000;	// Size of a record
-const int LINE_MAX = 10000;
 
 /*
  * Print a record in csv format
