@@ -41,8 +41,8 @@ int fixed_len_page_freeslots(Page *page) {
 	// Iterating over byte first to make it easier to understand 
 	for (int i = 1; i <= numBytes; i++)
 	{
-		int idx = page->page_size - i;
-		char charVal = ((char *)page->data)[idx];
+		int index = page->page_size - i;
+		char charVal = ((char *)page->data)[index];
 		for (int bit = 0; bit < 8; bit++)
 		{
 			// Because iterating over bytes, make sure we don't go
@@ -68,14 +68,14 @@ int fixed_len_page_freeslots(Page *page) {
 int add_fixed_len_page(Page *page, Record *r) {
 	
 	int numRecs = fixed_len_page_capacity(page);
-	int idx = 0, counter = 0, slot = -1, numBytes = (ceil)(numRecs / 8.0);
+	int index = 0, counter = 0, slot = -1, numBytes = (ceil)(numRecs / 8.0);
 
 
 	// Get the first empty slot
 	for (int i = 1; i <= numBytes; i++)
 	{
-		idx = page->page_size - i;
-		char charVal = ((char *)page->data)[idx];
+		index = page->page_size - i;
+		char charVal = ((char *)page->data)[index];
 		for (int bit = 0; bit < 8; bit++)
 		{
 			// Because iterating over bytes, make sure we don't go
@@ -118,8 +118,8 @@ void write_fixed_len_page(Page *page, int slot, Record *r) {
 	fixed_len_write(r, records[slot]);
 
 	// Make sure the slot flag is 1
-	int idx = page->page_size - (ceil)((slot+1) / 8.0);
-	((char *)page->data)[idx] |= 1 << (slot % 8);
+	int index = page->page_size - (ceil)((slot+1) / 8.0);
+	((char *)page->data)[index] |= 1 << (slot % 8);
 }
 
 /**
