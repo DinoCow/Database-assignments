@@ -76,11 +76,9 @@ int main(int argc, char *argv[])
 		// Allocate a new page if necessary
 		if (!page || fixed_len_page_freeslots(page) == 0) {
 			if (page) {	// page is full
-				fwrite(page->data, sizeof(char), page_size,
-				       page_file);
+				fwrite(page->data, sizeof(char), page_size, page_file);
 				//Free page here
-        delete[] (char*)page->data;
-        delete page;
+				free_page(page);
 			}
 			page = new Page;
 			init_fixed_len_page(page, page_size, SLOT_SIZE);
@@ -93,12 +91,14 @@ int main(int argc, char *argv[])
 		//Free char arrays in record
 		for (int i = 0; i < rec.size(); i++) {
 			//printf("attr:%s\n", rec[i]);
-			delete[] rec[i];
+			delete[]rec[i];
 		}
 	}
 
 	// Write the last page to file.
 	fwrite(page->data, sizeof(char), page_size, page_file);
+	free_page(page);
+	
 	fclose(csv_file);
 	fclose(page_file);
 	long end = get_time_ms();

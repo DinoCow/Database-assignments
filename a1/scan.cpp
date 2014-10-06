@@ -1,5 +1,4 @@
 #include <cassert>
-#include <iostream>
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
@@ -14,17 +13,6 @@
 
 using namespace std;
 const int SLOT_SIZE = 1000;	// Size of a record
-
-/*
- * Print a record in csv format
- */
-void print_rec(Record* rec){
-	size_t num_rec = rec.size();
-	for (int i=0; i<num_rec-1; i++){
-		cout << rec[i] <<",";
-	}
-	cout << rec[num_rec] << endl;
-}
 
 int main(int argc, char *argv[])
 {
@@ -50,7 +38,7 @@ int main(int argc, char *argv[])
 
     while(rit.hasNext()) {
     	Record rec = rit.next();
-    	print_rec(&rec);
+    	print_record_as_csv(&rec);
     }
 
 	fclose(heapfd);

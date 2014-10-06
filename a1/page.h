@@ -14,6 +14,7 @@ typedef struct {
  */
 void init_fixed_len_page(Page *page, int page_size, int slot_size);
 
+void free_page(Page *page);
 /**
  * Calculates the maximal number of records that fit in a page
  */

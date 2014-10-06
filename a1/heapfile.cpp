@@ -50,6 +50,7 @@ PageID alloc_page(Heapfile *heapfile){
     write_page(page, heapfile, pid);
 
     heapfile->num_pages++;
+
 	return pid;
 }
 
@@ -79,6 +80,7 @@ void get_next_entry(Heapfile *heapfile, Directory *directory, int *directory_off
 		*directory_offset = *directory->next_directory;
 		directory = new_directory;
 		entry = next_entry(new_directory);
+
 	} else {
 		entry = next_entry(directory);
 	}
