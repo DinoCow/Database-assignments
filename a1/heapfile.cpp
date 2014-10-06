@@ -16,9 +16,7 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 	Directory *directory = new Directory;
 	init_directory_page(directory, page_size);
 
- 	fwrite(directory->data, 1, page_size, file);
-
-    fflush(file);
+    write_directory(heapfile, 0, directory);
 
     heapfile->num_pages = 1;
 }
@@ -52,6 +50,7 @@ PageID alloc_page(Heapfile *heapfile){
     write_directory(heapfile, directory_offset, directory);
     write_page(page, heapfile, pid);
 
+    heapfile->num_pages++;
 	return pid;
 }
 
