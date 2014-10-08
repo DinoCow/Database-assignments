@@ -66,6 +66,8 @@ void get_next_entry(Heapfile *heapfile, Entry* entry){
 		Directory *new_directory = new Directory;
 		init_directory_page(new_directory, heapfile->page_size, new_directory_offset);
 		
+		//write out for the first time
+		write_directory(heapfile, new_directory_offset, new_directory);
 		heapfile->directory = new_directory;
 		//get entry from the new dir
 		entry = next_entry(new_directory);
