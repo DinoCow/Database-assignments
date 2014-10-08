@@ -14,9 +14,10 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
 
 	//create the directory page
 	Directory *directory = new Directory;
-	init_directory_page(directory, page_size);
+	init_directory_page(directory, page_size, 0);
 	write_directory(heapfile, 0, directory);
 
+	heapfile->directory = directory;
     heapfile->num_pages = 1;
 }
 
@@ -24,16 +25,10 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
  * Allocate another page in the heapfile.  This grows the file by a page.
  */
 PageID alloc_page(Heapfile *heapfile){
-	int directory_offset = 0;
 	Entry *entry = new Entry;
 	Page *page = new Page; 	
-	Directory *directory = new Directory;
-
-	//point to start of file and read first directory
-	fseek(heapfile->file_ptr, 0, SEEK_SET);
-	read_directory(heapfile, 0, directory);
 	
-	get_next_entry(heapfile, directory, &directory_offset, entry);
+	get_next_entry(heapfile, entry);
 
 	//Create the new page
 	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
@@ -43,10 +38,9 @@ PageID alloc_page(Heapfile *heapfile){
 	entry->offset = ftell(heapfile->file_ptr);
     entry->free_space = fixed_len_page_freeslots(page);
     //make pid the offset to the entry from the start of the file
-    PageID pid = directory_offset + sizeof(int) * 2 + (*directory->n_entries - 1) *  sizeof(Entry);
+    PageID pid = heapfile->directory->offset + sizeof(int) * 2 + (*heapfile->directory->n_entries - 1) *  sizeof(Entry);
 
     //write the directory and page out
-    write_directory(heapfile, directory_offset, directory);
     write_page(page, heapfile, pid);
 
     heapfile->num_pages++;
@@ -57,34 +51,25 @@ PageID alloc_page(Heapfile *heapfile){
 /**
  * Get the next entry that can be allocated from directory
  */
-void get_next_entry(Heapfile *heapfile, Directory *directory, int *directory_offset, Entry* entry){
-	entry = next_entry(directory);
-	if (entry == NULL && *directory->next_directory != 0) {		
-		//directory is full and points to another
-		*directory_offset = *directory->next_directory;
-		read_directory( heapfile, *directory_offset, directory);
-		get_next_entry( heapfile, directory, directory_offset, entry);
+void get_next_entry(Heapfile *heapfile, Entry* entry){
+	entry = next_entry(heapfile->directory);
 
-	} else if (entry == NULL){		
+	if (entry == NULL){		
 		fseek(heapfile->file_ptr, 0, SEEK_END);
-		*directory->next_directory = ftell(heapfile->file_ptr);
+		int new_directory_offset = ftell(heapfile->file_ptr);
+		*heapfile->directory->next_directory = new_directory_offset;
 
-		//write out with pointer to the new directory
-		write_directory(heapfile, *directory_offset, directory);
+		//write out full directory
+		write_directory(heapfile, heapfile->directory->offset, heapfile->directory);
 		
-		//add a new directory this will be written out in alloc_page
+		//add a new directory and point heapfile to new empty directory
 		Directory *new_directory = new Directory;
-		init_directory_page(new_directory, heapfile->page_size);
+		init_directory_page(new_directory, heapfile->page_size, new_directory_offset);
 		
-		//assign all the return values
-		*directory_offset = *directory->next_directory;
-		directory = new_directory;
+		heapfile->directory = new_directory;
+		//get entry from the new dir
 		entry = next_entry(new_directory);
-
-	} else {
-		entry = next_entry(directory);
 	}
-
 }
 
 /**
@@ -113,7 +98,7 @@ void read_directory(Heapfile *heapfile, int offset, Directory *directory){
 		printf("panic panic, can't read directory \n");
 	}
 
-	init_directory_page(directory, heapfile->page_size, buf);
+	init_directory_page(directory, heapfile->page_size, offset, buf);
 }
 
 /**

@@ -12,17 +12,18 @@ typedef struct{
 	int* next_directory;
 	Entry* entries;
 	void* data;
+	int offset;
 } Directory;
 
 /**
  * Initializes a directory using the given page size
  */
-void init_directory_page(Directory *directory, int page_size);
+void init_directory_page(Directory *directory, int page_size, int offset);
 
 /**
  * Initializes a directory using the given page size and data
  */
-void init_directory_page(Directory *directory, int page_size, char *data);
+void init_directory_page(Directory *directory, int page_size, int offset, char *data);
 
 /**
  * Check if the directory is full

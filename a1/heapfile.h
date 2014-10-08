@@ -13,6 +13,7 @@ typedef struct {
     FILE *file_ptr;
     int page_size;
     int num_pages;
+    Directory *directory;
 } Heapfile;
 
 typedef int PageID;
@@ -34,7 +35,7 @@ PageID alloc_page(Heapfile *heapfile);
 /**
  * Get the next entry that can be allocated from directory
  */
-void get_next_entry(Heapfile *heapfile, Directory *directory, int *offset, Entry* entry);
+void get_next_entry(Heapfile *heapfile, Entry* entry);
 
 /**
  * Write a directory into disk from memory
