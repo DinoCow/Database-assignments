@@ -21,10 +21,8 @@ void fixed_len_write(Record *record, void *buf) {
 	char* dest = (char *)buf;
 	for (Record::iterator it = record->begin(); it!=record->end(); ++it) {
 		V attr = *it;
-
+		// Copy at most ATTRIBUTE_SIZE characters.
 		strncpy(dest, attr, ATTRIBUTE_SIZE);
-		// Make sure all strings are NULL terminated.
-		dest[ATTRIBUTE_SIZE-1] = '\0';
 		// Move to next position in the buffer.
 		dest += ATTRIBUTE_SIZE;
 	}
@@ -42,13 +40,14 @@ void fixed_len_read(void *buf, int size, Record *record) {
 
 	char* src = (char *)buf;
 	for (Record::iterator it = record->begin(); it!=record->end(); ++it) {
-	
-		char* value = new char[ATTRIBUTE_SIZE];
+		
+		// Make room for null terminator
+		char* value = new char[ATTRIBUTE_SIZE+1];
 		
 		strncpy(value, src, ATTRIBUTE_SIZE);
 		// Let's not introduce a buffer overflow vulnerability
 		// in our database :)
-		value[ATTRIBUTE_SIZE-1] = '\0';
+		value[ATTRIBUTE_SIZE] = '\0';
 		*it = value;
 
 		src += ATTRIBUTE_SIZE;
