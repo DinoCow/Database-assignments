@@ -35,3 +35,7 @@ select
 csv2colstore
 select2
 select3
+
+*.db
+*.csv
+*~

@@ -1,6 +1,7 @@
 #include "directory.h"
 
 #include <cassert>
+#include <cstdio>
 /**
  * Initializes a directory using the given page size
  */
