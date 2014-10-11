@@ -13,7 +13,8 @@ typedef struct {
     FILE *file_ptr;
     int page_size;
     int num_pages;
-    Directory *directory;
+    Directory *directory_buffer;
+    Page *page_buffer;
 } Heapfile;
 
 typedef int PageID;
@@ -24,9 +25,22 @@ typedef struct {
 } RecordID;
 
 /**
- * Initalize a heapfile to use the file and page size given.
+ * Initalize a heapfile to use the page size given.
  */
-void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
+void init_heapfile(Heapfile *heapfile, int page_size);
+
+void close_heapfile(Heapfile *heapfile);
+
+/**
+ * Create the initial structure of a heapfile
+ * This only needs to be used when creating new heapfile
+ */
+void create_heapfile(Heapfile *heapfile);
+
+void put_record(Heapfile* heapfile, Record *rec);
+
+void get_record(Heapfile* heapfile, RecordID rid, Record *rec);
+
 /**
  * Allocate another page in the heapfile.  This grows the file by a page.
  */
