@@ -13,7 +13,7 @@ typedef struct {
     FILE *file_ptr;
     int page_size;
     int num_pages;
-    Directory *directory_buffer;
+    Directory *directory;
     Page *page_buffer;
 } Heapfile;
 
@@ -35,7 +35,7 @@ void close_heapfile(Heapfile *heapfile);
  * Create the initial structure of a heapfile
  * This only needs to be used when creating new heapfile
  */
-void create_heapfile(Heapfile *heapfile);
+void create_heapfile(Heapfile *heapfile, char* filename);
 
 void put_record(Heapfile* heapfile, Record *rec);
 

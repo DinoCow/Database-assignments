@@ -55,5 +55,4 @@ int main(int argc, char *argv[])
 
 	close_heapfile(heapfile);
 	fclose(csv_file);
-	fclose(heapfd);
 }

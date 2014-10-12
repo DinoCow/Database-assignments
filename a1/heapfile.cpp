@@ -6,19 +6,41 @@
 /**
  * Initalize a heapfile to use the file and page size given.
  */
-void init_heapfile(Heapfile *heapfile, int page_size, FILE *file) {
+void init_heapfile(Heapfile *heapfile, int page_size) {
 	assert(page_size > 1001);
 
-	heapfile->file_ptr= file;
+	heapfile = new Heapfile;
 	heapfile->page_size = page_size;
+}
+
+/**
+ * Create the initial structure of a heapfile
+ * This only needs to be used when creating new heapfile
+ */
+void create_heapfile(Heapfile* heapfile, char *filename) {
+
+	heapfile->file_ptr = fopen(filename, "w+");
 
 	//create the directory page
-	Directory *directory = new Directory;
-	init_directory_page(directory, page_size, 0);
-	write_directory(heapfile, 0, directory);
+	heapfile->directory = new Directory;
+	init_directory_page(heapfile->directory, heapfile->page_size, 0);
+	write_directory(heapfile, 0, heapfile->directory);
+}
 
-	heapfile->directory = directory;
-    heapfile->num_pages = 1;
+
+void put_record(Heapfile* heapfile, Record *rec) {
+
+	PageID pid = find_free_page(heapfile);
+	if (!pid) {
+		pid = alloc_page(heapfile);
+	}
+	// pid -> page
+	add_fixed_len_page(page, rec);
+}
+
+void get_record(Heapfile* heapfile, RecordID rid, Record *rec) {
+	//rid->pid -> page
+	read_fixed_len_page(page, rid.slotid, rec);
 }
 
 /**
