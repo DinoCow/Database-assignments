@@ -63,6 +63,22 @@ void close_heapfile(Heapfile *heapfile) {
 		Directory *dir = heapfile->directory_buffer[dir_no];
 		write_block(heapfile, (char *)dir->data, dir->offset);
 
+		//DEBUG PURPOSE
+		int num_records = 0;
+		int directorySize = ceil(heapfile->page_size/SLOTSIZE/8.0);
+		int page_capacity = (heapfile->page_size - directorySize)/SLOTSIZE;
+		fprintf(stderr,"=====================================\n");
+
+		fprintf(stderr,"CLOSE %d directory pages used\n",num_directories);
+		fprintf(stderr,"CLOSE %d data pages used\n",*dir->n_entries);
+		for(int i=0; i<*dir->n_entries; i++){
+			fprintf(stderr,"CLOSE dir->entries[%d].free_space=%d\n",i, dir->entries[i].free_space);
+			num_records += page_capacity - dir->entries[i].free_space;
+		}
+	
+		fprintf(stderr,"CLOSE %d records present\n",num_records);
+
+
 		delete[] (char *)dir->data;
 		delete dir;
 	}
@@ -73,17 +89,33 @@ void close_heapfile(Heapfile *heapfile) {
 
 void put_record(Heapfile* heapfile, Record *rec) {
 
-	printf("Put record:\n");
+	fprintf(stderr,"Put record:\n");
 	PageID pid = get_free_pid(heapfile);
 
-	printf("   get_free_pid=%d\n", pid);
+	fprintf(stderr,"   get_free_pid=%d\n", pid);
 	Page *page = new Page;
 	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
 	get_page(heapfile, pid, page);
 	add_fixed_len_page(page, rec);
-	commit_page(heapfile, page, pid);
 
+
+	int index = page->page_size - 1;
+	char byte = ((char *)page->data)[index];
+	fprintf(stderr,"PUTRECORD ===== Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
+
+	commit_page(heapfile, page, pid);
 	free_page(page);
+
+	//---SANITY CHECK
+	Page *page2 = new Page;
+	init_fixed_len_page(page2, heapfile->page_size, SLOTSIZE);
+	get_page(heapfile, pid, page2);
+
+	char byte2 = ((char *)page->data)[index];
+	fprintf(stderr,"PUTRECORD ===== Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte2));
+	assert(byte==byte2);
+	free_page(page);
+	//---
 }
 
 void get_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
@@ -92,7 +124,7 @@ void get_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
 	get_page(heapfile, rid->page_id, page);
 	read_fixed_len_page(page, rid->slot, rec);
 
-	printf("getrecord:%d\n", rid->page_id);
+	fprintf(stderr,"getrecord:%d\n", rid->page_id);
 	free_page(page);
 }
 
@@ -125,7 +157,7 @@ void delete_record(Heapfile *heapfile, RecordID *rid){
  */
 PageID get_free_pid(Heapfile *heapfile) {
 
-	printf("get free pid:\n");
+	fprintf(stderr,"get free pid:\n");
 
 	// return pid with a vacant slot or -1 if none available
 	PageID pid = vacant_page_id(heapfile);
@@ -147,8 +179,14 @@ void get_page(Heapfile *heapfile, PageID pid, Page *page) {
 	//free old page
 	//load new page
 
-	printf("get page: pid=%d  offset=%d\n", pid, entry->offset);
+	fprintf(stderr,"get page: pid=%d  offset=%d\n", pid, entry->offset);
 	read_block(heapfile, (char*)page->data, entry->offset);
+
+
+
+	int index = page->page_size - 1;
+	char byte = ((char *)page->data)[index];
+	fprintf(stderr,"GETPAGE(%d) ===== Bitset "BYTETOBINARYPATTERN"\n",pid, BYTETOBINARY(byte));
 	//push into cache
 }
 /**
@@ -156,7 +194,7 @@ void get_page(Heapfile *heapfile, PageID pid, Page *page) {
  */
 PageID alloc_page(Heapfile *heapfile){
 
-	printf("alloc page:\n");
+	fprintf(stderr,"alloc page:\n");
 	Entry entry;
 	Page *page = new Page; 	
 
@@ -174,7 +212,7 @@ PageID alloc_page(Heapfile *heapfile){
 	// add the new entry into entry list
     PageID pid = append_entry(heapfile, &entry);
 
-	printf("alloc page: pid=%d  offset=%d\n", pid, entry.offset);
+	fprintf(stderr,"alloc page: pid=%d  offset=%d\n", pid, entry.offset);
 
     heapfile->num_pages++;
     // push page to cache
@@ -191,11 +229,11 @@ void read_block(Heapfile *heapfile, char *buffer, int offset){
 	int result = fread(buffer, 1, heapfile->page_size, heapfile->file_ptr);
 	if(result != heapfile->page_size){
 		perror("read_block");
-		printf("panic panic, can't read block(%d)\n", result);
+		fprintf(stderr,"panic panic, can't read block(%d)\n", result);
 		exit(1);
 	}
 
-	printf("-----------------------------------read block(%d - %d)\n", offset, offset+result);
+	fprintf(stderr,"-----------------------------------read block(%d - %d)\n", offset, offset+result);
 
 }
 
@@ -210,11 +248,11 @@ void write_block(Heapfile *heapfile, char *buffer, int offset){
 
 	if (result != heapfile->page_size){
 		perror("write block");
-		printf("panic panic, can't write block(%d)\n", result);
+		fprintf(stderr,"panic panic, can't write block(%d)\n", result);
 		exit(1);
 	}
 
-	printf("----------------------------------wrote block(%d - %d)\n", offset, offset+result);
+	fprintf(stderr,"----------------------------------wrote block(%d - %d)\n", offset, offset+result);
 	fflush(heapfile->file_ptr);
 }
 
@@ -224,14 +262,15 @@ void commit_page(Heapfile *heapfile, Page *page, PageID pid) {
 
 	entry->free_space = fixed_len_page_freeslots(page);
 
-	printf("Commit page(%d)\n", entry->offset);
+	fprintf(stderr,"Commit page what but its here!!(%d)\n", entry->free_space);
+	fprintf(stderr,"Commit page(%d)\n", entry->offset);
 	write_block(heapfile, (char*)page->data, entry->offset);
 }
 
 
 PageID append_entry(Heapfile *heapfile, Entry *entry) {
 
-	printf("append entry:\n");
+	fprintf(stderr,"append entry:\n");
 	int num_directories = heapfile->directory_buffer.size();
 	int dir_no;
 	for (dir_no=0; dir_no < num_directories; dir_no++){
@@ -240,7 +279,7 @@ PageID append_entry(Heapfile *heapfile, Entry *entry) {
 			int slot_no = next_vacant_slot(dir);
 			dir->entries[slot_no] = *entry;
 
-			printf("appendentry ret1:(%d,%d,%d)\n", dir_no , dir->capacity , slot_no);
+			fprintf(stderr,"appendentry ret1:(%d,%d,%d)\n", dir_no , dir->capacity , slot_no);
 			return dir_no * dir->capacity + slot_no;
 		}
 	}
@@ -259,7 +298,7 @@ PageID append_entry(Heapfile *heapfile, Entry *entry) {
 	int slot_no = next_vacant_slot(new_dir);
 	new_dir->entries[slot_no] = *entry;
 
-	printf("appendentry ret2:(%d)\n", (num_directories) * new_dir->capacity + slot_no);
+	fprintf(stderr,"appendentry ret2:(%d)\n", (num_directories) * new_dir->capacity + slot_no);
 	return (num_directories) * new_dir->capacity + slot_no;
 //
 }
@@ -268,10 +307,10 @@ PageID append_entry(Heapfile *heapfile, Entry *entry) {
 	// get entry from pid
 Entry *get_entry(Heapfile *heapfile, PageID pid) {
 
-	printf("get entry:(%d)\n", pid);
+	fprintf(stderr,"get entry:(%d)\n", pid);
 	int capacity = heapfile->directory_buffer[0]->capacity;
 
-	printf("  Capacity(%d)\n", capacity);
+	fprintf(stderr,"  Capacity(%d)\n", capacity);
 
 	int dir_no = pid / capacity;
 	int slot_no = pid % capacity;
@@ -283,7 +322,7 @@ Entry *get_entry(Heapfile *heapfile, PageID pid) {
 
 PageID vacant_page_id(Heapfile *heapfile){
 
-	printf("vacant page id:\n");
+	fprintf(stderr,"vacant page id:\n");
 	int num_directories = heapfile->directory_buffer.size();
 
 	//check every directory page

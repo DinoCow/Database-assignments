@@ -1,6 +1,6 @@
 //#include <cstring>
 #include <cassert>
-//#include <cstdio>
+#include <cstdio>
 #include <iostream>
 #include "page.h"
 #include <math.h> // ceil
@@ -76,6 +76,8 @@ int add_fixed_len_page(Page *page, Record *r) {
 	{
 		index = page->page_size - i;
 		char charVal = ((char *)page->data)[index];
+
+		fprintf(stderr,"Add fix len Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(charVal));
 		for (int bit = 0; bit < 8; bit++)
 		{
 			// Because iterating over bytes, make sure we don't go
@@ -119,7 +121,13 @@ void write_fixed_len_page(Page *page, int slot, Record *r) {
 
 	// Make sure the slot flag is 1
 	int index = page->page_size - (ceil)((slot+1) / 8.0);
+
+	char byte = ((char *)page->data)[index];
+	fprintf(stderr,"before write Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
+
 	((char *)page->data)[index] |= 1 << (slot % 8);
+	byte = ((char *)page->data)[index];
+	fprintf(stderr,"after write Bitset to slot (%d) "BYTETOBINARYPATTERN"\n", slot, BYTETOBINARY(byte));	
 }
 
 /**
@@ -131,6 +139,10 @@ void read_fixed_len_page(Page *page, int slot, Record *r) {
 
 	// Check record is valid before being read
 	int index = page->page_size - (ceil)((slot+1) / 8.0);
+
+	char byte = ((char *)page->data)[index];
+	fprintf(stderr,"read Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
+
 	int valid = ((char *)page->data)[index] & (1 << (slot % 8));
 	assert (valid > 0);
 

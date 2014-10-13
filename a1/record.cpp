@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cassert>
 #include <iostream>
+#include <cstdio>
 #include "record.h"
 
 /**

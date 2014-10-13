@@ -38,6 +38,8 @@ int next_vacant_slot(Directory* directory){
 int find_free_page(Directory* directory){
 	for(int i=0; i<*directory->n_entries; i++){
 		if (directory->entries[i].free_space > 0) {
+			fprintf(stderr, "find_free_page dir->entries[%d].free_space=%d\n",i, directory->entries[i].free_space);
+		
 			return i;
 		}
 	}
