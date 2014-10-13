@@ -18,8 +18,11 @@ void init_heapfile(Heapfile *heapfile, int page_size) {
  * This only needs to be used when creating new heapfile
  */
 void create_heapfile(Heapfile* heapfile, char *filename) {
+	//(w+) Create an empty file and open it for input and output.
+	// If a file with the same name already exists its contents
+	// are discarded and the file is treated as a new empty file.
 	heapfile->file_ptr = fopen(filename, "w+");
-
+	assert(heapfile->file_ptr);
 	//create the directory page
 	Directory *directory = new Directory;
 	// First page of heapfile is a directory.
@@ -31,6 +34,25 @@ void create_heapfile(Heapfile* heapfile, char *filename) {
 	//heapfile->directory.push_back(directory);
 }
 
+void open_heapfile(Heapfile *heapfile, char *filename) {
+	//(r+) Open a file for input and output. The file must exist.
+	heapfile->file_ptr = fopen(filename, "r+");
+	assert(heapfile->file_ptr);
+
+
+	int offset = 0;
+	do {
+	//create the directory page
+	Directory *directory = new Directory;
+	// First page of heapfile is a directory.
+	init_directory_page(directory, heapfile->page_size, offset);
+	read_block(heapfile, (char *)directory->data, offset);
+
+	//  directories are buffered
+	heapfile->directory_buffer.push_back(directory);
+	offset = *directory->next_directory;
+	} while (offset != 0);
+}
 
 void close_heapfile(Heapfile *heapfile) {
 
@@ -228,8 +250,10 @@ Entry *get_entry(Heapfile *heapfile, PageID pid) {
 
 	int dir_no = pid / capacity;
 	int slot_no = pid % capacity;
-	
-	return & heapfile->directory_buffer[dir_no]->entries[slot_no];
+
+	Directory *dir = heapfile->directory_buffer[dir_no];
+	assert(slot_no < *dir->n_entries);
+	return & dir->entries[slot_no];
 }
 
 PageID vacant_page_id(Heapfile *heapfile){
@@ -242,10 +266,51 @@ PageID vacant_page_id(Heapfile *heapfile){
 		Directory *dir = heapfile->directory_buffer[dir_no];
 		// check every slot
 		int slot_no = find_free_page(dir);
-		if (slot_no == -1) {
+		if (slot_no != -1) {
 			return dir_no * dir->capacity + slot_no;
 		}
 	}
 	// No vacant pages available.
 	return -1;
+}
+
+Record RecordIterator::next(){
+	Page *page = new Page;
+	Record record(100);
+
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	get_page(heapfile, pid, page);
+	read_fixed_len_page(page, slot, &record);
+	free_page(page);
+	
+	// Increment iterator
+	int capacity = fixed_len_page_capacity(page);
+	slot++;
+	if (slot >= capacity) {
+		slot=0;
+		pid++;
+	}
+
+	int capacity2 = heapfile->directory_buffer[0]->capacity;
+	
+	int dir_no = pid / capacity2;
+	int slot_no = pid % capacity2;
+	Directory *dir = heapfile->directory_buffer[dir_no];
+	
+	if(!(slot_no < *dir->n_entries)) {
+		has_next = false;
+	} else {
+		Page *page2 = new Page;
+		init_fixed_len_page(page2, heapfile->page_size, SLOTSIZE);
+		get_page(heapfile, pid, page2);
+
+		int index = page2->page_size - ceil((slot+1) / 8.0);
+		int valid = ((char *)page2->data)[index] & (1 << (slot % 8));
+		
+		has_next = (valid > 0);
+		free_page(page2);
+	}
+	
+
+	return record;
 }

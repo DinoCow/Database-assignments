@@ -75,10 +75,15 @@ PageID append_entry(Heapfile *heapfile, Entry *entry);
 Entry *get_entry(Heapfile *heapfile, PageID pid);
 
 class RecordIterator {
-    public:
-    RecordIterator(Heapfile *heapfile);
+public:
+    RecordIterator(Heapfile *heapfile):heapfile(heapfile),pid(0),slot(0), has_next(true){};
     Record next();
-    bool hasNext();
+    bool hasNext() { return has_next; }
+private:
+    Heapfile *heapfile;
+    PageID pid;
+    int slot;
+    bool has_next;
 };
 
 PageID vacant_page_id(Heapfile *heapfile);
