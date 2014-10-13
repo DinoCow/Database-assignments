@@ -36,15 +36,16 @@ int main(int argc, char** argv) {
 	Heapfile *heapfile = new Heapfile;
 	init_heapfile(heapfile, page_size);
 	open_heapfile(heapfile, filename);
-
+	char buf[4];
+	
 	RecordIterator rit(heapfile);
 	while(rit.hasNext()) {
     	Record rec = rit.next();
     	if (strcmp(rec[attribute_id], argv[3]) >= 0 && 
     		strcmp(rec[attribute_id], argv[4]) <= 0)
     	{
-    		//TODO supposed to print SUBSTRING(A, 1, 5) . See assignment sheet.
-    		cout << rec[attribute_id] << endl;
+    		strncpy(buf, rec[1], 4);
+    		cout << buf << endl;
     	}
     }
 
