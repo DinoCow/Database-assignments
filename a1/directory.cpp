@@ -19,22 +19,6 @@ void init_directory_page(Directory *directory, int page_size, int offset){
 	directory->offset = offset;
 }
 
-/**
- * Initializes a directory using the given page size and data
- */
-void init_directory_page(Directory *directory, int page_size, int offset, char *data){
-		// sizeof(int) is the size of next_directory
-	int capacity = (page_size - sizeof(int) * 2) / sizeof(Entry);
-	assert (capacity > 0);
-
-	directory->data = data;
-	directory->n_entries = (int*) directory->data + sizeof(int);
-	directory->capacity = capacity;
-	directory->next_directory = (int*) directory->data;
-	directory->entries = (Entry*) directory->data + sizeof(int) * 2;
-	directory->offset = offset;
-}
-
 bool is_full(Directory* directory){
 	return (*directory->n_entries == directory->capacity);
 }

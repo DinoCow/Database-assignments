@@ -21,11 +21,6 @@ typedef struct{
 void init_directory_page(Directory *directory, int page_size, int offset);
 
 /**
- * Initializes a directory using the given page size and data
- */
-void init_directory_page(Directory *directory, int page_size, int offset, char *data);
-
-/**
  * Check if the directory is full
  */
 bool is_full(Directory *directory);
