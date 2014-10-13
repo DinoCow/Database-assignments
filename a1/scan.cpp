@@ -1,5 +1,6 @@
 #include <cassert>
 #include <fstream>
+#include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -40,6 +41,13 @@ int main(int argc, char *argv[])
     while(rit.hasNext()) {
     	Record rec = rit.next();
     	print_record_as_csv(&rec);
+
+
+    			//Free char arrays in record
+		for (int i = 0; i < rec.size(); i++) 
+		{
+			delete[]rec[i];
+		}
     }
 
 	close_heapfile(heapfile);
