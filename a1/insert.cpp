@@ -25,50 +25,28 @@ int main(int argc, char *argv[])
 		return (1);
 	}
 
-	FILE *csv_file = fopen(argv[1], "r");
-	FILE *heapfd = fopen(argv[2], "w");
+
+	char *heapfile_name = argv[1];
+	FILE *csv_file = fopen(argv[2], "r");
 	int page_size = atoi(argv[3]);
 
-	if (!csv_file || !heapfd || !(page_size > 0)) {
+	if (!csv_file || !(page_size > 0)) {
 		cerr << "FAIL" << endl;
 		return (1);
 	}
 
-	Heapfile heapfile;
-	init_heapfile(&heapfile, page_size, heapfd);
-
-	Page *page = NULL;
+	Heapfile *heapfile = new Heapfile;
+	init_heapfile(heapfile, page_size);
+	open_heapfile(heapfile, heapfile_name);
 
 	char line[MAX_LINE_LEN];
-	PageID pid;
 
 	while (fgets(line, MAX_LINE_LEN, csv_file)) {
 		Record rec;
 		// split csv and push into record
 		load_csv_record(&rec, line);
-
-		// Get a page with free space if necessary
-		if (!page || fixed_len_page_freeslots(page) == 0) 
-		{
-			if (page) { // page is full
-				// Write page to heap again
-				write_page(page, &heapfile, pid);
-
-				//Free page here
-				free_page(page);
-			}
-			
-			// Get a page with free space
-			pid = get_Free_Page(&heapfile);
-			page = new Page;
-			read_page(&heapfile, pid, page);
-		}
-
-		// Insert record into page
-		if (add_fixed_len_page(page, &rec) == -1) {
-			// Something went wrong.
-		}
-
+		put_record(heapfile, &rec);
+		
 		//Free char arrays in record
 		for (int i = 0; i < rec.size(); i++) {
 			//printf("attr:%s\n", rec[i]);
@@ -76,9 +54,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// Write the last page to file. 
-	write_page(page, &heapfile, pid);
-	free_page(page);
+	close_heapfile(heapfile);
 	fclose(csv_file);
-	fclose(heapfd);
 }
