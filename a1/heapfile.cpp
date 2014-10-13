@@ -354,14 +354,20 @@ Record RecordIterator::next(){
 		slot=0;
 		pid++;
 	}
-
+	fprintf(stderr,"slot:%d/%d pid%d\n", slot, capacity, pid);
+	
 	int capacity2 = heapfile->directory_buffer[0]->capacity;
 	
 	int dir_no = pid / capacity2;
 	int slot_no = pid % capacity2;
+
+	fprintf(stderr,"NENTRIES:%d/%d\nSIZEOF %lu\n", dir_no, capacity2,heapfile->directory_buffer.size());
 	Directory *dir = heapfile->directory_buffer[dir_no];
 	
+	fprintf(stderr,"NENTRIES:%d\n", *(dir->n_entries));
+	
 	if(!(slot_no < *dir->n_entries)) {
+		fprintf(stderr,"no more entries %d >= %d\n", slot_no, *(dir->n_entries));
 		has_next = false;
 	} else {
 		Page *page2 = new Page;
@@ -370,8 +376,14 @@ Record RecordIterator::next(){
 
 		int index = page2->page_size - ceil((slot+1) / 8.0);
 		int valid = ((char *)page2->data)[index] & (1 << (slot % 8));
+		char byte = ((char *)page2->data)[index];
 		
+		fprintf(stderr,"Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
+
 		has_next = (valid > 0);
+		if (!has_next) {
+			fprintf(stderr,"no more entries %d >= %d\n", slot, capacity);
+		}
 		free_page(page2);
 	}
 	
