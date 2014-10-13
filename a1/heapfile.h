@@ -14,8 +14,7 @@ typedef struct {
     FILE *file_ptr;
     int page_size;
     int num_pages;
-    Directory *directory;
-    std::vector<Entry> entry_list;
+    std::vector<Directory*> directory_buffer;
     //Page *page_buffer;
 } Heapfile;
 
@@ -36,6 +35,8 @@ void init_heapfile(Heapfile *heapfile, int page_size);
  * This only needs to be used when creating new heapfile
  */
 void create_heapfile(Heapfile* heapfile, char *filename);
+
+void open_heapfile(Heapfile* heapfile, char *filename);
 
 void close_heapfile(Heapfile *heapfile);
 
@@ -68,11 +69,18 @@ void write_block(Heapfile *heapfile, char *buffer, int offset);
 void commit_page(Heapfile *heapfile, Page *page, PageID pid);
 
 
+PageID append_entry(Heapfile *heapfile, Entry *entry);
+
+// get entry from pid
+Entry *get_entry(Heapfile *heapfile, PageID pid);
+
 class RecordIterator {
     public:
     RecordIterator(Heapfile *heapfile);
     Record next();
     bool hasNext();
 };
+
+PageID vacant_page_id(Heapfile *heapfile);
 
 #endif

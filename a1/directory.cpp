@@ -35,29 +35,27 @@ void init_directory_page(Directory *directory, int page_size, int offset, char *
 	directory->offset = offset;
 }
 
-bool directory_is_full(Directory* directory){
+bool is_full(Directory* directory){
 	return (*directory->n_entries == directory->capacity);
 }
 
 /**
- * Append an empty entry to directory and return its pointer
+ * Append an empty entry to directory and return its index
  */
-Entry* next_entry(Directory* directory){
-	if (directory_is_full(directory)){
-		return NULL;
-	}
-	directory->n_entries++;
-	return &directory->entries[*directory->n_entries];
+int next_vacant_slot(Directory* directory){
+	assert(!is_full(directory));
+	(*directory->n_entries)++;
+	return *directory->n_entries-1;
 }
 
 /**
  * Find a page in the directory with some free space
  */
-Entry* find_free_page(Directory* directory){
+int find_free_page(Directory* directory){
 	for(int i=0; i<*directory->n_entries; i++){
 		if (directory->entries[i].free_space > 0) {
-			return &directory->entries[i];
-		}	
+			return i;
+		}
 	}
-	return NULL;
+	return -1;
 }
