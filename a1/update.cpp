@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 		return (1);
 	}
 
-	FILE *heapfd = fopen(argv[1], "w");
+	char *heapfile_name = argv[1];
 	int attribute_id = atoi(argv[3]);
 	int page_size = atoi(argv[5]);
 
@@ -40,38 +40,34 @@ int main(int argc, char *argv[])
 	if (record_id != NULL)
 		slot = atoi(record_id);
 
+	RecordID rid;
+	rid.page_id = pid;
+	rid.slot = slot;
+	cerr << "PID:" << pid << " SLOT:" << slot << endl;
 	// Get the new value
 	char *new_value = new char[ATTRIBUTE_SIZE + 1];
 	strncpy(new_value, argv[4], ATTRIBUTE_SIZE);
 	new_value[ATTRIBUTE_SIZE] = '\0';
 
-	if (!heapfd || !(pid > 0) || !(slot > 0) || !(attribute_id > 0) || !(page_size > 0)) {
+	if (!(pid >= 0) || !(slot >= 0) || !(attribute_id >= 0) || !(page_size > 0)) {
 		cerr << "FAIL" << endl;
 		return (1);
 	}
 
-	Heapfile heapfile;
-	init_heapfile(&heapfile, page_size, heapfd);
+	Heapfile *heapfile = new Heapfile;
+	init_heapfile(heapfile, page_size);
+	open_heapfile(heapfile, heapfile_name);
 
-	Page *page = new Page;
 	Record rec(NUM_ATTR);
-
-	// Read record from disk and modify value
-	read_page(&heapfile, pid, page);
-	read_fixed_len_page(page, slot, &rec);
+	get_record(heapfile, &rid, &rec);
+	// update the attribute
 	rec[attribute_id] = new_value;
-
-	// Write record back out to disk
-	write_fixed_len_page(page, slot, &rec);
-	write_page(page, &heapfile, pid);
+	update_record(heapfile, &rid, &rec);
 
 	// FREE ALL THE SPACE
 	for (int i = 0; i < rec.size(); i++) {
 		delete[]rec[i];
 	}
 
-	delete[](char *)page->data;
-	delete page;
-
-	fclose(heapfd);
+	close_heapfile(heapfile);
 }

@@ -44,6 +44,8 @@ void put_record(Heapfile* heapfile, Record *rec);
     
 void get_record(Heapfile* heapfile, RecordID *rid, Record *rec);
 
+void update_record(Heapfile* heapfile, RecordID *rid, Record *rec);
+
 /* Search existing pages with free space.
  * May allocate new page
  */

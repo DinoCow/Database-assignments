@@ -96,6 +96,17 @@ void get_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
 	free_page(page);
 }
 
+void update_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
+
+	Page *page = new Page;
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	get_page(heapfile, rid->page_id, page);
+	write_fixed_len_page(page, rid->slot, rec);
+	commit_page(heapfile, page, rid->page_id);
+
+	free_page(page);
+}
+
 /* Search existing pages with free space.
  * May allocate new page
  */
