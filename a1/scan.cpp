@@ -8,7 +8,6 @@
 #include "page.h"
 #include "heapfile.h"
 
-#include <sys/timeb.h>
 #include <vector>
 
 using namespace std;
@@ -23,23 +22,25 @@ int main(int argc, char *argv[])
 		return (1);
 	}
 
-	FILE *heapfd = fopen(argv[1], "r");
+
+	char *heapfile_name = argv[1];
 	int page_size = atoi(argv[2]);
 
-	if (!heapfd || !(page_size > 0)) {
-		cerr << "FAIL" << endl;
+	Heapfile *heapfile = new Heapfile;
+	init_heapfile(heapfile, page_size);
+	open_heapfile(heapfile, heapfile_name);
+
+	if (!(page_size > 0)) {
+		cerr << "Page size must be a positive integer" << endl;
 		return (1);
 	}
 
-	Heapfile heapfile;
-	init_heapfile(&heapfile, page_size, heapfd);
-
-    RecordIterator rit(&heapfile);
+    RecordIterator rit(heapfile);
 
     while(rit.hasNext()) {
     	Record rec = rit.next();
     	print_record_as_csv(&rec);
     }
 
-	fclose(heapfd);
+	close_heapfile(heapfile);
 }
