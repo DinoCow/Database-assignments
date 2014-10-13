@@ -137,3 +137,16 @@ void read_fixed_len_page(Page *page, int slot, Record *r) {
 	void *record = (char *)page->data + slot * page->slot_size;
 	fixed_len_read(record, page->slot_size, r);
 }
+
+/**
+ * Remove a record from a given slot.
+ */
+void delete_fixed_len_page(Page *page, int slot){
+
+	assert (slot >= 0);
+
+	// Set the slot flag to 0
+	int index = page->page_size - (ceil)((slot+1) / 8.0);
+	((char *)page->data)[index] &= ~(1 << (slot % 8));
+
+}
