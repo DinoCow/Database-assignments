@@ -15,7 +15,7 @@ using namespace std;
 
 int main(int argc, char** argv) {
 	if (argc != 6) {
-		cerr << "Usage: select <colstore_name> <attribute_id> "
+		cerr << "Usage: select2 <colstore_name> <attribute_id> "
 		     << "<start> <end> <page_size>"
 		     << endl;
 		return (1);
