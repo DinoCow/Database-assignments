@@ -82,6 +82,7 @@ public:
     RecordIterator(Heapfile *heapfile):heapfile(heapfile),pid(0),slot(0), has_next(true){};
     Record next();
     bool hasNext() { return has_next; }
+    RecordID currentRID();
 private:
     Heapfile *heapfile;
     PageID pid;

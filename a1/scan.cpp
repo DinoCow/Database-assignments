@@ -40,6 +40,8 @@ int main(int argc, char *argv[])
 
     while(rit.hasNext()) {
     	Record rec = rit.next();
+    	RecordID rid = rit.currentRID();
+    	cout << "RID("<< rid.page_id << "," << rid.slot << ") ";
     	print_record_as_csv(&rec);
 
 

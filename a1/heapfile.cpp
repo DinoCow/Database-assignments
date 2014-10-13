@@ -339,3 +339,10 @@ Record RecordIterator::next(){
 
 	return record;
 }
+
+RecordID RecordIterator::currentRID(){
+	RecordID rid;
+	rid.page_id = pid;
+	rid.slot = slot;
+	return rid;
+}
