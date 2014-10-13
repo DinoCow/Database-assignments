@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <cassert>
+#include <cstdlib>
 
 /**
  * Initalize a heapfile to use the file and page size given.
@@ -9,7 +10,6 @@
 void init_heapfile(Heapfile *heapfile, int page_size) {
 	assert(page_size > 1001);
 
-	heapfile = new Heapfile;
 	heapfile->page_size = page_size;
 }
 
@@ -18,160 +18,171 @@ void init_heapfile(Heapfile *heapfile, int page_size) {
  * This only needs to be used when creating new heapfile
  */
 void create_heapfile(Heapfile* heapfile, char *filename) {
-
 	heapfile->file_ptr = fopen(filename, "w+");
 
 	//create the directory page
-	heapfile->directory = new Directory;
-	init_directory_page(heapfile->directory, heapfile->page_size, 0);
-	write_directory(heapfile, 0, heapfile->directory);
+	Directory *directory = new Directory;
+	// First page of heapfile is a directory.
+	init_directory_page(directory, heapfile->page_size, 0);
+	write_block(heapfile, (char *)directory->data, 0);
+
+	// set it as the curent directory in the buffer
+	heapfile->directory = directory;
+	//heapfile->directory.push_back(directory);
 }
 
+
+void close_heapfile(Heapfile *heapfile) {
+
+	//write out directory buffer
+	Directory *directory = heapfile->directory;
+	write_block(heapfile, (char *)directory->data, directory->offset);
+	delete[] (char *)directory->data;
+	delete directory;
+
+	fclose(heapfile->file_ptr);
+	delete heapfile;
+}
 
 void put_record(Heapfile* heapfile, Record *rec) {
 
-	PageID pid = find_free_page(heapfile);
-	if (!pid) {
-		pid = alloc_page(heapfile);
-	}
-	// pid -> page
+	printf("Put record:\n");
+	PageID pid = get_free_pid(heapfile);
+
+	printf("   get_free_pid=%d\n", pid);
+	Page *page = new Page;
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	
+	printf("   get_page\n");
+	get_page(heapfile, pid, page);
+	
+	printf("   addfix\n");
 	add_fixed_len_page(page, rec);
+	
+	printf("   commit\n");
+	commit_page(heapfile, page, pid);
+
+	free_page(page);
 }
 
-void get_record(Heapfile* heapfile, RecordID rid, Record *rec) {
-	//rid->pid -> page
-	read_fixed_len_page(page, rid.slotid, rec);
+void get_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
+	Page *page = new Page;
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	get_page(heapfile, rid->page_id, page);
+	read_fixed_len_page(page, rid->slot, rec);
+
+	printf("getrecord:%d\n", rid->page_id);
+	free_page(page);
 }
 
+/* Search existing pages with free space.
+ * May allocate new page
+ */
+PageID get_free_pid(Heapfile *heapfile) {
+
+	printf("get free pid:\n");
+
+	for (PageID pid=0; pid<heapfile->entry_list.size(); pid++) {
+
+	printf("pid:%d freespace:%d\n", pid,heapfile->entry_list[pid].free_space);
+		if ( heapfile->entry_list[pid].free_space > 0 ) {
+			return pid;
+		}
+	}
+	//no free pages available so allocate new page.
+	return alloc_page(heapfile);
+}
+
+
+void get_page(Heapfile *heapfile, PageID pid, Page *page) {
+	//if pid in cache: return page
+	//else:
+
+	printf("getpage: size of entry_list:%d [%d]\n", heapfile->entry_list.size(), pid);
+
+	Entry entry = heapfile->entry_list.at(pid);
+	//write out cache in buffer
+	//free old page
+	//load new page
+
+	printf("get page: pid=%d  offset=%d\n", pid, entry.offset);
+	read_block(heapfile, (char*)page->data, entry.offset);
+	//push into cache
+}
 /**
  * Allocate another page in the heapfile.  This grows the file by a page.
  */
 PageID alloc_page(Heapfile *heapfile){
-	Entry *entry = new Entry;
+
+	printf("alloc page:\n");
+	Entry entry;
 	Page *page = new Page; 	
-	
-	get_next_entry(heapfile, entry);
 
 	//Create the new page
 	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
 
 	//assign entry pointers
 	fseek(heapfile->file_ptr, 0, SEEK_END);
-	entry->offset = ftell(heapfile->file_ptr);
-    entry->free_space = fixed_len_page_freeslots(page);
-    //make pid the offset to the entry from the start of the file
-    PageID pid = heapfile->directory->offset + sizeof(int) * 2 + (*heapfile->directory->n_entries - 1) *  sizeof(Entry);
+	entry.offset = ftell(heapfile->file_ptr);
+    entry.free_space = fixed_len_page_freeslots(page);
 
-    //write the directory and page out
-    write_page(page, heapfile, pid);
+	// add the new entry into entry list   
+   	heapfile->entry_list.push_back(entry);
+   	PageID pid = heapfile->entry_list.size()-1;
+
+    //write the page out
+    write_block(heapfile, (char*)page->data, entry.offset);
+
+	printf("alloc page: pid=%d  offset=%d\n", pid, entry.offset);
+
 
     heapfile->num_pages++;
-
+    // push page to cache
+    free_page(page);
 	return pid;
 }
 
 /**
- * Get the next entry that can be allocated from directory
+ * Read a page size block into memory
  */
-void get_next_entry(Heapfile *heapfile, Entry* entry){
-	entry = next_entry(heapfile->directory);
-
-	if (entry == NULL){		
-		fseek(heapfile->file_ptr, 0, SEEK_END);
-		int new_directory_offset = ftell(heapfile->file_ptr);
-		*heapfile->directory->next_directory = new_directory_offset;
-
-		//write out full directory
-		write_directory(heapfile, heapfile->directory->offset, heapfile->directory);
-		
-		//add a new directory and point heapfile to new empty directory
-		Directory *new_directory = new Directory;
-		init_directory_page(new_directory, heapfile->page_size, new_directory_offset);
-		
-		//write out for the first time
-		write_directory(heapfile, new_directory_offset, new_directory);
-		heapfile->directory = new_directory;
-		//get entry from the new dir
-		entry = next_entry(new_directory);
-	}
-}
-
-/**
- * Write a directory into disk from memory
- */
-void write_directory(Heapfile *heapfile, int offset, Directory *directory){
+void read_block(Heapfile *heapfile, char *buffer, int offset){
 	fseek(heapfile->file_ptr, offset, SEEK_SET);
-	int result = fwrite(directory->data, 1, heapfile->page_size, heapfile->file_ptr);
 
-	if (result != heapfile->page_size){
-		printf("panic panic, can't write page");
-	}
-
-	fflush(heapfile->file_ptr);
-}
-
-/*
- * Read a directory into memory 
- */
-void read_directory(Heapfile *heapfile, int offset, Directory *directory){
-	fseek(heapfile->file_ptr, offset, SEEK_SET);
-	char buf[heapfile->page_size];
-
-	int result = fread(buf, 1, heapfile->page_size, heapfile->file_ptr);
-	if(result != heapfile->page_size) { 
-		printf("panic panic, can't read directory \n");
-	}
-
-	init_directory_page(directory, heapfile->page_size, offset, buf);
-}
-
-/**
- * Read a page into memory
- */
-void read_page(Heapfile *heapfile, PageID pid, Page *page){
-	int page_offset = get_page_offset(heapfile, pid);
-
-	fseek(heapfile->file_ptr, page_offset, SEEK_SET);
-
-	char page_data[heapfile->page_size];
-
-	int result = fread(page_data, 1, heapfile->page_size, heapfile->file_ptr);
+	int result = fread(buffer, 1, heapfile->page_size, heapfile->file_ptr);
 	if(result != heapfile->page_size){
-		printf("panic panic, can't read Page \n");
+		perror("read_block");
+		printf("panic panic, can't read block(%d)\n", result);
+		exit(1);
 	}
 
-	page->data = page_data;
+	printf("-----------------------------------read block(%d - %d)\n", offset, offset+result);
+
 }
 
 /**
- * Write a page from memory to disk
+ * Write a page size block from memory to disk
  */
-void write_page(Page *page, Heapfile *heapfile, PageID pid){
-	int page_offset = get_page_offset(heapfile, pid);
+void write_block(Heapfile *heapfile, char *buffer, int offset){
 
-	fseek(heapfile->file_ptr, page_offset, SEEK_SET);
+	fseek(heapfile->file_ptr, offset, SEEK_SET);
 
-	int result = fwrite(page->data, 1, heapfile->page_size, heapfile->file_ptr);
+	int result = fwrite(buffer, 1, heapfile->page_size, heapfile->file_ptr);
 
 	if (result != heapfile->page_size){
-		printf("panic panic, can't read page");
+		perror("write block");
+		printf("panic panic, can't write block(%d)\n", result);
+		exit(1);
 	}
 
+	printf("----------------------------------wrote block(%d - %d)\n", offset, offset+result);
 	fflush(heapfile->file_ptr);
 }
 
-/**
- * get the page offset from the directory
- */
-int get_page_offset(Heapfile *heapfile, PageID pid){
-	fseek(heapfile->file_ptr, pid, SEEK_SET);
-	int page_offset;
+void commit_page(Heapfile *heapfile, Page *page, PageID pid) {
 
-	int result = fread(&page_offset, 1, sizeof(int), heapfile->file_ptr);
-	if(result != sizeof(int)){
-		printf("panic panic, can't read Entry \n");
-	}
+	Entry *entry = &heapfile->entry_list[pid];
+	entry->free_space = fixed_len_page_freeslots(page);
 
-	return page_offset;
+	printf("Commit page(%d)\n", entry->offset);
+	write_block(heapfile, (char*)page->data, entry->offset);
 }
-

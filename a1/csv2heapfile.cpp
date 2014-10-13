@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include "record.h"
-#include "page.h"
 #include "heapfile.h"
 
 #include <sys/timeb.h>
@@ -34,7 +33,7 @@ int main(int argc, char *argv[])
 		return (1);
 	}
 
-	Heapfile *heapfile;
+	Heapfile *heapfile = new Heapfile;
 	init_heapfile(heapfile, page_size);
 	create_heapfile(heapfile, heapfile_name);
 

@@ -2,6 +2,7 @@
 #define HEAPFILE_H
 
 #include <stdio.h>
+#include <vector>
 
 #include "record.h"
 #include "page.h"
@@ -14,7 +15,8 @@ typedef struct {
     int page_size;
     int num_pages;
     Directory *directory;
-    Page *page_buffer;
+    std::vector<Entry> entry_list;
+    //Page *page_buffer;
 } Heapfile;
 
 typedef int PageID;
@@ -25,21 +27,28 @@ typedef struct {
 } RecordID;
 
 /**
- * Initalize a heapfile to use the page size given.
+ * Initalize a heapfile to use the file and page size given.
  */
 void init_heapfile(Heapfile *heapfile, int page_size);
-
-void close_heapfile(Heapfile *heapfile);
 
 /**
  * Create the initial structure of a heapfile
  * This only needs to be used when creating new heapfile
  */
-void create_heapfile(Heapfile *heapfile, char* filename);
+void create_heapfile(Heapfile* heapfile, char *filename);
+
+void close_heapfile(Heapfile *heapfile);
 
 void put_record(Heapfile* heapfile, Record *rec);
+    
+void get_record(Heapfile* heapfile, RecordID *rid, Record *rec);
 
-void get_record(Heapfile* heapfile, RecordID rid, Record *rec);
+/* Search existing pages with free space.
+ * May allocate new page
+ */
+PageID get_free_pid(Heapfile *heapfile);
+
+void get_page(Heapfile *heapfile, PageID pid, Page *page);
 
 /**
  * Allocate another page in the heapfile.  This grows the file by a page.
@@ -47,33 +56,17 @@ void get_record(Heapfile* heapfile, RecordID rid, Record *rec);
 PageID alloc_page(Heapfile *heapfile);
 
 /**
- * Get the next entry that can be allocated from directory
+ * Read a page size block into memory
  */
-void get_next_entry(Heapfile *heapfile, Entry* entry);
+void read_block(Heapfile *heapfile, char *buffer, int offset);
 
 /**
- * Write a directory into disk from memory
+ * Write a page size block from memory to disk
  */
-void write_directory(Heapfile *heapfile, int offset, Directory *directory);
+void write_block(Heapfile *heapfile, char *buffer, int offset);
 
-/*
- * read a directory into memory 
- */
-void read_directory(Heapfile *heapfile, int offset, Directory *directory);
+void commit_page(Heapfile *heapfile, Page *page, PageID pid);
 
-/**
- * Read a page into memory
- */
-void read_page(Heapfile *heapfile, PageID pid, Page *page);
-/**
- * Write a page from memory to disk
- */
-void write_page(Page *page, Heapfile *heapfile, PageID pid); 
-
-/**
- * get the page offset from the direcotry 
- */
-int get_page_offset(Heapfile *heapfile, PageID pid);
 
 class RecordIterator {
     public:
