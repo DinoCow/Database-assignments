@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <cassert>
 #include <cstdlib>
+#include <cmath>
 
 /**
  * Initalize a heapfile to use the file and page size given.
