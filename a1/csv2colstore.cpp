@@ -34,10 +34,10 @@ int main(int argc, char** argv) {
 	}
 
 	char line[MAX_LINE_LEN];
-	int tupleId = 0;
+	int tuple_id = 0;
 	char filename[20];
 	char *token;
-	int attributeId = 0;
+	int attribute_id = 0;
 	Heapfile *heapfile;
 	Heapfile *heapfiles[100];
 
@@ -47,16 +47,16 @@ int main(int argc, char** argv) {
 	token = strtok(line, ",");
 	while (token != NULL) {
 		//printf ("%s\n",token);
-		sprintf(filename, "%s/%d.txt", directory_name, attributeId);
+		sprintf(filename, "%s/%d.txt", directory_name, attribute_id);
 		//printf("%s\n", filename);
 		heapfile = new Heapfile;
 		init_heapfile(heapfile, page_size);
 		create_heapfile(heapfile, filename);
 
-		heapfiles[attributeId] = heapfile;
+		heapfiles[attribute_id] = heapfile;
 
 		Record rec;
-		load_col_record(&rec, token, tupleId);
+		load_col_record(&rec, token, tuple_id);
 		put_record(heapfile, &rec);
 		
 		//Free char arrays in record
@@ -66,18 +66,18 @@ int main(int argc, char** argv) {
 		}
 
 		token = strtok(NULL, ",");
-		attributeId++;
+		attribute_id++;
 	}
-	tupleId++;
+	tuple_id++;
 
 	//add the rest 
 	while (fgets(line, MAX_LINE_LEN, csv_file)) {
-		attributeId = 0;
+		attribute_id = 0;
 		token = strtok(line, ",");
 		while (token != NULL) {
-			heapfile = heapfiles[attributeId];
+			heapfile = heapfiles[attribute_id];
 			Record rec;
-			load_col_record(&rec, token, tupleId);
+			load_col_record(&rec, token, tuple_id);
 			put_record(heapfile, &rec);
 		
 			//Free char arrays in record
@@ -87,9 +87,9 @@ int main(int argc, char** argv) {
 			}
 
 			token = strtok(NULL, ",");
-			attributeId++;
+			attribute_id++;
 		}	
-		tupleId++;
+		tuple_id++;
 	}
 	
 	//close all the heapfiles
