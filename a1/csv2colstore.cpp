@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 	token = strtok(line, ",");
 	while (token != NULL) {
 		//printf ("%s\n",token);
-		sprintf(filename, "%s/%d.txt", directory_name, attribute_id);
+		sprintf(filename, "%s/%d", directory_name, attribute_id);
 		//printf("%s\n", filename);
 		heapfile = new Heapfile;
 		init_heapfile(heapfile, page_size);
