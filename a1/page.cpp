@@ -114,8 +114,8 @@ int add_fixed_len_page(Page *page, Record *r) {
 void write_fixed_len_page(Page *page, int slot, Record *r) {
 	
 	assert (slot >= 0);
-	char (*records)[page->slot_size] = (char(*)[page->slot_size])page->data;
-	fixed_len_write(r, records[slot]);
+	void *record = (char *)page->data + slot * page->slot_size;
+	fixed_len_write(r, record);
 
 	// Make sure the slot flag is 1
 	int index = page->page_size - (ceil)((slot+1) / 8.0);
@@ -134,6 +134,6 @@ void read_fixed_len_page(Page *page, int slot, Record *r) {
 	int valid = ((char *)page->data)[index] & (1 << (slot % 8));
 	assert (valid > 0);
 
-	char (*records)[page->slot_size] = (char(*)[page->slot_size])page->data;
-	fixed_len_read(records[slot], page->slot_size, r);
+	void *record = (char *)page->data + slot * page->slot_size;
+	fixed_len_read(record, page->slot_size, r);
 }

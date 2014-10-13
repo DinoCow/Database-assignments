@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 
 	// Slot directory take up exactly 2 records
 	init_fixed_len_page(&page1, 1620, 10);
-	assert(fixed_len_page_capacity(&page1) == 160); 
+	assert(fixed_len_page_capacity(&page1) == 159); 
 	delete[] (char*)page1.data;
 	page1.data = NULL;
 
@@ -86,7 +86,8 @@ int main(int argc, char** argv) {
 	// Check if record written in
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (10*i));
-		assert(strcmp(str, "123456789")==0);
+
+		assert(strncmp(str, "1234567891", 10)==0);
 	}
 
 	Record rec2(100, "abcdefghijkl");
@@ -98,7 +99,8 @@ int main(int argc, char** argv) {
 	// Check if record written in
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (2*page.slot_size + 10*i));
-		assert(strcmp(str, "abcdefghi")==0);
+				// printf("name = %s\n, %i\n", str, i);
+		assert(strncmp(str, "abcdefghij", 10)==0);
 	}
 
 	// Set so directory full but last slot
@@ -118,7 +120,7 @@ int main(int argc, char** argv) {
 	// Check if record written in
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (18*page.slot_size + 10*i));
-		assert(strcmp(str, "123456789")==0);
+		assert(strncmp(str, "1234567891", 10)==0);
 	}
 
 	// Writing when all slots are full
@@ -135,28 +137,28 @@ int main(int argc, char** argv) {
 	// Initial first slot...
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (10*i));
-		assert(strcmp(str, "123456789")==0);
+		assert(strncmp(str, "1234567891", 10)==0);
 	}
 	assert(fixed_len_page_freeslots(&page) == 0);
 	// Overwrite first slot
 	write_fixed_len_page(&page, 0, &rec2);
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (10*i));
-		assert(strcmp(str, "abcdefghi")==0);
+		assert(strncmp(str, "abcdefghij", 10)==0);
 	}
 	assert(fixed_len_page_freeslots(&page) == 0);
 
 	// Initial last slot...
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (18*page.slot_size + 10*i));
-		assert(strcmp(str, "123456789")==0);
+		assert(strncmp(str, "1234567891", 10)==0);
 	}
 	assert(fixed_len_page_freeslots(&page) == 0);
 	// Overwrite first slot
 	write_fixed_len_page(&page, 18, &rec2);
 	for (int i=0; i< 100; i++){
 		char* str = ((char*)page.data + (18*page.slot_size + 10*i));
-		assert(strcmp(str, "abcdefghi")==0);
+		assert(strncmp(str, "abcdefghij", 10)==0);
 	}
 	assert(fixed_len_page_freeslots(&page) == 0);
 
@@ -170,7 +172,7 @@ int main(int argc, char** argv) {
 	Record rec3(100);
 	read_fixed_len_page(&page, 0, &rec3);
 	for (unsigned int i=0; i<rec3.size(); i++) {
-		assert(strcmp(rec3[i], "abcdefghi")==0);
+		assert(strncmp(rec3[i], "abcdefghij", 10)==0);
 	}
 	assert(rec3[5] != rec3[3]);
 
