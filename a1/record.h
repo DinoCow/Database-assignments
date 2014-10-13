@@ -32,4 +32,9 @@ void print_record_as_csv(Record *record);
  * Split line on ',' and insert tokens into record
  */
 void load_csv_record(Record * record, char line[]);
+
+/*
+ * create record with tupidId and attribute
+ */
+void load_col_record(Record * record, char* token, int tupleId);
 #endif

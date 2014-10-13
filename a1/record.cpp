@@ -4,7 +4,6 @@
 #include <iostream>
 #include "record.h"
 
-
 /**
  * Compute the number of bytes required to serialize record
  */
@@ -84,4 +83,22 @@ void load_csv_record(Record * record, char line[])
 		token = strtok(NULL, ",");
 	}
 	assert(record->size() == 100);	// I think...
+}
+
+/*
+ * create record with tupidId and attribute
+ */
+void load_col_record(Record * record, char* token, int tupleId){
+	char *attribute;
+	char *tupId; 
+	tupId = new char[ATTRIBUTE_SIZE + 1];
+	attribute = new char[ATTRIBUTE_SIZE + 1];
+
+	sprintf(tupId,"%d",tupleId);
+	strncpy(attribute, token, ATTRIBUTE_SIZE);
+	tupId[ATTRIBUTE_SIZE] = '\0';
+	attribute[ATTRIBUTE_SIZE] = '\0';
+	
+	record->push_back(tupId);
+	record->push_back(attribute);
 }
