@@ -41,8 +41,8 @@ int main(int argc, char** argv) {
 	RecordIterator rit(heapfile);
 	while(rit.hasNext()) {
     	Record rec = rit.next();
-    	if (strcmp(rec[attribute_id], argv[3]) >= 0 && 
-    		strcmp(rec[attribute_id], argv[4]) <= 0)
+    	if (strcmp(rec[1], argv[3]) >= 0 && 
+    		strcmp(rec[1], argv[4]) <= 0)
     	{
     		strncpy(buf, rec[1], 4);
     		cout << buf << endl;
