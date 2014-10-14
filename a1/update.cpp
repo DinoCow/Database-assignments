@@ -17,9 +17,8 @@ const int NUM_ATTR = 100; // Number of attributes
 int main(int argc, char *argv[])
 {
 	if (argc != 6) {
-		cerr <<
-		    "Usage: update <heapfile> <record_id> <attribute_id> "
-		    << "<new_value> <page_size>" << endl;
+		cerr << "Update one attribute of a single record in the heap file given its record ID" << endl;
+		cerr << "Usage: update <heapfile> <record_id> <attribute_id> <new_value> <page_size>" << endl;
 		return (1);
 	}
 
@@ -43,7 +42,7 @@ int main(int argc, char *argv[])
 	RecordID rid;
 	rid.page_id = pid;
 	rid.slot = slot;
-	cerr << "PID:" << pid << " SLOT:" << slot << endl;
+
 	// Get the new value
 	char *new_value = new char[ATTRIBUTE_SIZE + 1];
 	strncpy(new_value, argv[4], ATTRIBUTE_SIZE);
@@ -65,7 +64,7 @@ int main(int argc, char *argv[])
 	update_record(heapfile, &rid, &rec);
 
 	// FREE ALL THE SPACE
-	for (int i = 0; i < rec.size(); i++) {
+	for (unsigned int i = 0; i < rec.size(); i++) {
 		delete[]rec[i];
 	}
 

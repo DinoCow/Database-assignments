@@ -19,9 +19,8 @@ const int MAX_LINE_LEN = 10000;
 int main(int argc, char *argv[])
 {
 	if (argc != 4) {
-		cerr <<
-		    "Usage: insert <heapfile> <csv_file> <page_size>"
-		    << endl;
+		cerr << "Insert all records in the CSV file to a heap file" << endl;
+		cerr << "Usage: insert <heapfile> <csv_file> <page_size>" << endl;
 		return (1);
 	}
 
@@ -48,7 +47,7 @@ int main(int argc, char *argv[])
 		put_record(heapfile, &rec);
 		
 		//Free char arrays in record
-		for (int i = 0; i < rec.size(); i++) {
+		for (unsigned int i = 0; i < rec.size(); i++) {
 			//printf("attr:%s\n", rec[i]);
 			delete[]rec[i];
 		}

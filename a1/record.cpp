@@ -58,7 +58,7 @@ void fixed_len_read(void *buf, int size, Record *record) {
  * Print a record in csv format
  */
 void print_record_as_csv(Record *record) {
-	size_t num_rec = record->size();
+	int num_rec = (int)record->size();
 	for (int i=0; i<num_rec-1; i++){
 		std::cout << (*record)[i] <<",";
 	}

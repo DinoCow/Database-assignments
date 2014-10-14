@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 		}
 
 		//Free char arrays in record
-		for (int i = 0; i < rec.size(); i++) 
+		for (unsigned int i = 0; i < rec.size(); i++) 
 		{
 			delete[]rec[i];
 		}

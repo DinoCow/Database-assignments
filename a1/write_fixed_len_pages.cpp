@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 			// Something went wrong.
 		}
 		//Free char arrays in record
-		for (int i = 0; i < rec.size(); i++) {
+		for (unsigned int i = 0; i < rec.size(); i++) {
 			//printf("attr:%s\n", rec[i]);
 			delete[]rec[i];
 		}

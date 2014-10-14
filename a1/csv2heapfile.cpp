@@ -25,9 +25,8 @@ long get_time_ms()
 int main(int argc, char *argv[])
 {
 	if (argc != 4) {
-		cerr <<
-		    "Usage: csv2heapfile <csv_file> <heap_file> <page_size>"
-		    << endl;
+		cerr << "Build heap file from CSV file" << endl;
+		cerr << "Usage: csv2heapfile <csv_file> <heap_file> <page_size>" << endl;
 		return (1);
 	}
 
@@ -54,7 +53,7 @@ int main(int argc, char *argv[])
 		put_record(heapfile, &rec);
 		
 		//Free char arrays in record
-		for (int i = 0; i < rec.size(); i++) {
+		for (unsigned int i = 0; i < rec.size(); i++) {
 			//printf("attr:%s\n", rec[i]);
 			delete[]rec[i];
 		}

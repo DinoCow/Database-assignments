@@ -17,9 +17,8 @@ const int SLOT_SIZE = 1000;	// Size of a record
 int main(int argc, char *argv[])
 {
 	if (argc != 3) {
-		cerr <<
-		    "Usage: scan <heapfile> <page_size>"
-		    << endl;
+		cerr << "Print out all records in a heap file" << endl;
+		cerr << "Usage: scan <heapfile> <page_size>" << endl;
 		return (1);
 	}
 
@@ -46,7 +45,7 @@ int main(int argc, char *argv[])
 
 
     			//Free char arrays in record
-		for (int i = 0; i < rec.size(); i++) 
+		for (unsigned int i = 0; i < rec.size(); i++) 
 		{
 			delete[]rec[i];
 		}

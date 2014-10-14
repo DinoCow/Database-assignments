@@ -17,8 +17,8 @@ const int NUM_ATTR = 100; // Number of attributes
 int main(int argc, char *argv[])
 {
 	if (argc != 4) {
-		cerr <<
-		    "Usage: delete <heapfile> <record_id> <page_size>" << endl;
+		cerr << "Delete a single record in the heap file given its record ID" << endl;
+		cerr << "Usage: delete <heapfile> <record_id> <page_size>" << endl;
 		return (1);
 	}
 
@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
 	RecordID rid;
 	rid.page_id = pid;
 	rid.slot = slot;
-	cerr << "PID:" << pid << " SLOT:" << slot << endl;
 
 	if (!(pid >= 0) || !(slot >= 0) || !(page_size > 0)) {
 		cerr << "FAIL" << endl;
