@@ -12,6 +12,9 @@ void init_heapfile(Heapfile *heapfile, int page_size) {
 	assert(page_size > 1001);
 
 	heapfile->page_size = page_size;
+	heapfile->cached_page = NULL;
+	heapfile->cached_pid = -1;
+	heapfile->page_cache_dirty = false;
 }
 
 /**
@@ -56,6 +59,15 @@ void open_heapfile(Heapfile *heapfile, char *filename) {
 
 void close_heapfile(Heapfile *heapfile) {
 
+	//write out cache in buffer if dirty
+	if (heapfile->page_cache_dirty) {
+		Entry *entry = get_entry(heapfile, heapfile->cached_pid);
+		write_block(heapfile, (char*)heapfile->cached_page->data, entry->offset);
+	}
+	//free old page
+	if (heapfile->cached_pid != -1) {
+		free_page(heapfile->cached_page);
+	}
 	//write out directory buffer
 	int num_directories = heapfile->directory_buffer.size();
 	for (int dir_no=0; dir_no < num_directories; dir_no++){
@@ -92,9 +104,8 @@ void put_record(Heapfile* heapfile, Record *rec) {
 	PageID pid = get_free_pid(heapfile);
 
 	fprintf(stderr,"   get_free_pid=%d\n", pid);
-	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
-	get_page(heapfile, pid, page);
+
+	Page *page = get_page(heapfile, pid);
 	add_fixed_len_page(page, rec);
 
 
@@ -102,53 +113,41 @@ void put_record(Heapfile* heapfile, Record *rec) {
 	char byte = ((char *)page->data)[index];
 	fprintf(stderr,"PUTRECORD ===== Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
 
-	commit_page(heapfile, page, pid);
-	free_page(page);
+	commit_page(heapfile, pid);
 
 	//---SANITY CHECK
-	Page *page2 = new Page;
-	init_fixed_len_page(page2, heapfile->page_size, SLOTSIZE);
-	get_page(heapfile, pid, page2);
+
+	Page *page2 = get_page(heapfile, pid);
 
 	char byte2 = ((char *)page2->data)[index];
 	fprintf(stderr,"PUTRECORD ===== Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte2));
 	assert(byte==byte2);
-	free_page(page2);
+	assert(page==page2);
 	//---
 }
 
 void get_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
-	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
-	get_page(heapfile, rid->page_id, page);
+
+	Page *page = get_page(heapfile, rid->page_id);
 	read_fixed_len_page(page, rid->slot, rec);
 
 	fprintf(stderr,"getrecord:%d\n", rid->page_id);
-	free_page(page);
 }
 
 void update_record(Heapfile* heapfile, RecordID *rid, Record *rec) {
 
-	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
-	get_page(heapfile, rid->page_id, page);
+	Page *page = get_page(heapfile, rid->page_id);
 	write_fixed_len_page(page, rid->slot, rec);
-	commit_page(heapfile, page, rid->page_id);
-
-	free_page(page);
+	commit_page(heapfile, rid->page_id);
 }
 
 void delete_record(Heapfile *heapfile, RecordID *rid){
 
-	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
-
-	get_page(heapfile, rid->page_id, page);
+	Page *page = get_page(heapfile, rid->page_id);
 
 	delete_fixed_len_page(page, rid->slot);
 	
-	commit_page(heapfile, page, rid->page_id);
-	free_page(page);
+	commit_page(heapfile, rid->page_id);
 }
 
 /* Search existing pages with free space.
@@ -168,25 +167,42 @@ PageID get_free_pid(Heapfile *heapfile) {
 	return pid;
 }
 
-void get_page(Heapfile *heapfile, PageID pid, Page *page) {
-	//if pid in cache: return page
-	//else:
+Page *get_page(Heapfile *heapfile, PageID pid) {
+	if (heapfile->cached_pid == pid) {
+		fprintf(stderr,"========CACHE HIT========(%d)\n", pid);
+
+		return heapfile->cached_page;
+	}
+
+	//write out cache in buffer if dirty
+	if (heapfile->page_cache_dirty) {
+		Entry *entry = get_entry(heapfile, heapfile->cached_pid);
+		write_block(heapfile, (char*)heapfile->cached_page->data, entry->offset);
+	}
+
+	//free old page
+	if (heapfile->cached_pid != -1) {
+		free_page(heapfile->cached_page);
+	}
+
+	//load new page
+	Page *page = new Page;
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
 
 	Entry *entry = get_entry(heapfile, pid);
-
-	//write out cache in buffer
-	//free old page
-	//load new page
 
 	fprintf(stderr,"get page: pid=%d  offset=%d\n", pid, entry->offset);
 	read_block(heapfile, (char*)page->data, entry->offset);
 
-
-
 	int index = page->page_size - 1;
 	char byte = ((char *)page->data)[index];
 	fprintf(stderr,"GETPAGE(%d) ===== Bitset "BYTETOBINARYPATTERN"\n",pid, BYTETOBINARY(byte));
+	
 	//push into cache
+	heapfile->cached_page = page;
+	heapfile->cached_pid = pid;
+	heapfile->page_cache_dirty = false;
+	return page;
 }
 /**
  * Allocate another page in the heapfile.  This grows the file by a page.
@@ -213,10 +229,23 @@ PageID alloc_page(Heapfile *heapfile){
 
 	fprintf(stderr,"alloc page: pid=%d  offset=%d\n", pid, entry.offset);
 
-    heapfile->num_pages++;
+	// TODO WRITE OUT PAGE CACHE
+	//write out cache in buffer if dirty
+	if (heapfile->page_cache_dirty) {
+		Entry *entry = get_entry(heapfile, heapfile->cached_pid);
+		write_block(heapfile, (char*)heapfile->cached_page->data, entry->offset);
+	}
+	//free old page
+	if (heapfile->cached_pid != -1) {
+		free_page(heapfile->cached_page);
+	}
+
     // push page to cache
-    free_page(page);
-	return pid;
+	heapfile->cached_page = page;
+	heapfile->cached_pid = pid;
+	heapfile->page_cache_dirty = false;
+
+    return pid;
 }
 
 /**
@@ -255,15 +284,13 @@ void write_block(Heapfile *heapfile, char *buffer, int offset){
 	fflush(heapfile->file_ptr);
 }
 
-void commit_page(Heapfile *heapfile, Page *page, PageID pid) {
+void commit_page(Heapfile *heapfile, PageID pid) {
 
-	Entry *entry = get_entry(heapfile, pid);
-
-	entry->free_space = fixed_len_page_freeslots(page);
-
-	fprintf(stderr,"Commit page what but its here!!(%d)\n", entry->free_space);
-	fprintf(stderr,"Commit page(%d)\n", entry->offset);
-	write_block(heapfile, (char*)page->data, entry->offset);
+	Entry *entry = get_entry(heapfile, heapfile->cached_pid);
+	entry->free_space = fixed_len_page_freeslots(heapfile->cached_page);
+	assert(heapfile->cached_pid == pid);
+	heapfile->page_cache_dirty = true;
+	fprintf(stderr,"Commit page(%d)\n", pid);
 }
 
 
@@ -350,13 +377,10 @@ RecordIterator::RecordIterator(Heapfile *heap){
 
 Record RecordIterator::next(){
 
-	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	Page *page = get_page(heapfile, pid);
 
 	Record record(100);
-	get_page(heapfile, pid, page);
 	read_fixed_len_page(page, slot, &record);
-	free_page(page);
 	
 	// Increment iterator
 	increment_iterator();
@@ -377,10 +401,8 @@ void RecordIterator::increment_iterator(){
 	//while (page_is_allocated(pid)) {
 	while(page_is_allocated) {
 		//get page (pid)
-		Page *page = new Page;
-		init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
-		get_page(heapfile, pid, page);
-
+		Page *page = get_page(heapfile, pid);
+		
 		//get next slot after `slot` that contains a record
 		slot = get_next_filled_slot(page, slot);
 

@@ -10,20 +10,22 @@
 
 const int SLOTSIZE = 1000;
 
-typedef struct {
-    FILE *file_ptr;
-    int page_size;
-    int num_pages;
-    std::vector<Directory*> directory_buffer;
-    //Page *page_buffer;
-} Heapfile;
-
 typedef int PageID;
 
 typedef struct {
     int page_id;
     int slot;
 } RecordID;
+
+typedef struct {
+    FILE *file_ptr;
+    int page_size;
+    std::vector<Directory*> directory_buffer;
+
+    Page *cached_page;
+    PageID cached_pid;
+    bool page_cache_dirty;
+} Heapfile;
 
 /**
  * Initalize a heapfile to use the file and page size given.
@@ -52,7 +54,7 @@ void delete_record(Heapfile *heapfile, RecordID *rid);
  */
 PageID get_free_pid(Heapfile *heapfile);
 
-void get_page(Heapfile *heapfile, PageID pid, Page *page);
+Page* get_page(Heapfile *heapfile, PageID pid);
 
 /**
  * Allocate another page in the heapfile.  This grows the file by a page.
@@ -69,7 +71,7 @@ void read_block(Heapfile *heapfile, char *buffer, int offset);
  */
 void write_block(Heapfile *heapfile, char *buffer, int offset);
 
-void commit_page(Heapfile *heapfile, Page *page, PageID pid);
+void commit_page(Heapfile *heapfile, PageID pid);
 
 
 PageID append_entry(Heapfile *heapfile, Entry *entry);
