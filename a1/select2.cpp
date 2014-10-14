@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 	Heapfile *heapfile = new Heapfile;
 	init_heapfile(heapfile, page_size);
 	open_heapfile(heapfile, filename);
-	char buf[4];
+	char buf[5];
 	
 	RecordIterator rit(heapfile);
 	while(rit.hasNext()) {
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     	if (strcmp(rec[1], argv[3]) >= 0 && 
     		strcmp(rec[1], argv[4]) <= 0)
     	{
-    		strncpy(buf, rec[1], 4);
+    		strncpy(buf, rec[1], 5);
     		cout << buf << endl;
     	}
     }

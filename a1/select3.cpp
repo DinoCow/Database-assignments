@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     heapfile = new Heapfile;
     init_heapfile(heapfile, page_size);
 	open_heapfile(heapfile, filename);
-	char buf[4];
+	char buf[5];
 
 	for (vector<int>::iterator it = tuples_id.begin(); it!=tuples_id.end(); ++it) {
 		int tuple_id = *it;
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 		while(rit.hasNext()) {
 	    	Record rec = rit.next();
 	    	if (tuple_id == atoi(rec[0])){
-	    		strncpy(buf, rec[1], 4);
+	    		strncpy(buf, rec[1], 5);
 	    		cout << buf << endl;
 	    		break;
 	    	}
