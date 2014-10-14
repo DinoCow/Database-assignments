@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
+#include <sys/timeb.h>
 
 #include "record.h"
 #include "page.h"
@@ -12,6 +13,13 @@
 #include <vector>
 
 using namespace std;
+
+long get_time_ms()
+{
+	struct timeb t;
+	ftime(&t);
+	return t.time * 1000 + t.millitm;
+}
 
 int main(int argc, char** argv) {
 	if (argc != 6) {
@@ -30,6 +38,7 @@ int main(int argc, char** argv) {
 		return (1);
 	}
 
+	long start = get_time_ms();
 	char filename[20];
 	sprintf(filename, "%s/%d", directory_name, attribute_id);
 	
@@ -50,4 +59,6 @@ int main(int argc, char** argv) {
     }
 
 	close_heapfile(heapfile);
+	long end = get_time_ms();
+	cout << "TIME: " << end - start << " milliseconds" << endl;
 }

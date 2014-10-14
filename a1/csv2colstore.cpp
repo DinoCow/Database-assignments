@@ -14,6 +14,13 @@
 using namespace std;
 const int MAX_LINE_LEN = 10000;
 
+long get_time_ms()
+{
+	struct timeb t;
+	ftime(&t);
+	return t.time * 1000 + t.millitm;
+}
+
 int main(int argc, char** argv) {
 	if (argc != 4) {
 		cerr <<
@@ -21,7 +28,6 @@ int main(int argc, char** argv) {
 		    << endl;
 		return (1);
 	}
-
 	
 	FILE *csv_file = fopen(argv[1], "r");
 	char *directory_name = argv[2];
@@ -33,6 +39,7 @@ int main(int argc, char** argv) {
 		return (1);
 	}
 
+	long start = get_time_ms();
 	char line[MAX_LINE_LEN];
 	int tuple_id = 0;
 	char filename[20];
@@ -101,4 +108,6 @@ int main(int argc, char** argv) {
 
 	fclose(csv_file);
 
+	long end = get_time_ms();
+	cout << "TIME: " << end - start << " milliseconds" << endl;
 }

@@ -15,6 +15,13 @@ using namespace std;
 const int SLOT_SIZE = 1000;	// Size of a record
 const int MAX_LINE_LEN = 10000;
 
+long get_time_ms()
+{
+	struct timeb t;
+	ftime(&t);
+	return t.time * 1000 + t.millitm;
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc != 4) {
@@ -33,6 +40,7 @@ int main(int argc, char *argv[])
 		return (1);
 	}
 
+	long start = get_time_ms();
 	Heapfile *heapfile = new Heapfile;
 	init_heapfile(heapfile, page_size);
 	create_heapfile(heapfile, heapfile_name);
@@ -54,4 +62,7 @@ int main(int argc, char *argv[])
 
 	close_heapfile(heapfile);
 	fclose(csv_file);
+
+	long end = get_time_ms();
+	cout << "TIME: " << end - start << " milliseconds" << endl;
 }
