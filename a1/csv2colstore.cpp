@@ -12,7 +12,7 @@
 #include <vector>
 
 using namespace std;
-const int SLOT_SIZE = 200;	// Size of a record
+const int SLOT_SIZE = 20;	// Size of a record
 const int MAX_LINE_LEN = 10000;
 
 long get_time_ms()
