@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 	int page_size = atoi(argv[2]);
 
 	Heapfile *heapfile = new Heapfile;
-	init_heapfile(heapfile, page_size);
+	init_heapfile(heapfile, page_size, SLOT_SIZE);
 	open_heapfile(heapfile, heapfile_name);
 
 	if (!(page_size > 0)) {

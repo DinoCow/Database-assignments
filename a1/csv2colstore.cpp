@@ -12,6 +12,7 @@
 #include <vector>
 
 using namespace std;
+const int SLOT_SIZE = 200;	// Size of a record
 const int MAX_LINE_LEN = 10000;
 
 long get_time_ms()
@@ -57,7 +58,7 @@ int main(int argc, char** argv) {
 		sprintf(filename, "%s/%d", directory_name, attribute_id);		
 		//printf("%s\n", filename);
 		heapfile = new Heapfile;
-		init_heapfile(heapfile, page_size);
+		init_heapfile(heapfile, page_size, SLOT_SIZE);
 		create_heapfile(heapfile, filename);
 
 		heapfiles[attribute_id] = heapfile;

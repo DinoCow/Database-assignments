@@ -135,7 +135,7 @@ void read_fixed_len_page(Page *page, int slot, Record *r) {
 	int index = page->page_size - (ceil)((slot+1) / 8.0);
 
 	int valid = ((char *)page->data)[index] & (1 << (slot % 8));
-	assert (valid > 0);
+	//assert (valid > 0);
 
 	void *record = (char *)page->data + slot * page->slot_size;
 	fixed_len_read(record, page->slot_size, r);

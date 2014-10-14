@@ -8,8 +8,6 @@
 #include "page.h"
 #include "directory.h"
 
-const int SLOTSIZE = 1000;
-
 typedef int PageID;
 
 typedef struct {
@@ -25,12 +23,13 @@ typedef struct {
     Page *cached_page;
     PageID cached_pid;
     bool page_cache_dirty;
+    int slot_size;
 } Heapfile;
 
 /**
  * Initalize a heapfile to use the file and page size given.
  */
-void init_heapfile(Heapfile *heapfile, int page_size);
+void init_heapfile(Heapfile *heapfile, int page_size, int slot_size);
 
 /**
  * Create the initial structure of a heapfile

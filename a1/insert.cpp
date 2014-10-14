@@ -13,6 +13,7 @@
 #include <vector>
 
 using namespace std;
+const int SLOT_SIZE = 1000;	// Size of a record
 const int MAX_LINE_LEN = 10000;
 
 
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
 	}
 
 	Heapfile *heapfile = new Heapfile;
-	init_heapfile(heapfile, page_size);
+	init_heapfile(heapfile, page_size, SLOT_SIZE);
 	open_heapfile(heapfile, heapfile_name);
 
 	char line[MAX_LINE_LEN];

@@ -6,6 +6,7 @@ heapfile = "heapfile"
 attribute_id = 0;
 start = "start"
 end = "end"
+filename = "test.csv"
 
 num_of_rec = 10000
 page_size = (
