@@ -41,10 +41,11 @@ int main(int argc, char** argv) {
 	long start = get_time_ms();
 	char filename[20];
 	
+	sprintf(filename, "%s/%d", directory_name, attribute_id);
 	Heapfile *heapfile = new Heapfile;
 	init_heapfile(heapfile, page_size);
 	open_heapfile(heapfile, filename);
-	char buf[5];
+	char buf[6];
 	
 	RecordIterator rit(heapfile);
 	while(rit.hasNext()) {
@@ -53,6 +54,7 @@ int main(int argc, char** argv) {
     		strcmp(rec[1], argv[4]) <= 0)
     	{
     		strncpy(buf, rec[1], 5);
+    		buf[5] = '\0';
     		cout << buf << endl;
     	}
     }
