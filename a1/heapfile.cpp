@@ -209,8 +209,6 @@ PageID alloc_page(Heapfile *heapfile){
 	// add the new entry into entry list
     PageID pid = append_entry(heapfile, &entry);
 
-
-	// TODO WRITE OUT PAGE CACHE
 	//write out cache in buffer if dirty
 	if (heapfile->page_cache_dirty) {
 		Entry *entry = get_entry(heapfile, heapfile->cached_pid);
