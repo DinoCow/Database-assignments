@@ -81,14 +81,16 @@ PageID vacant_page_id(Heapfile *heapfile);
 
 class RecordIterator {
 public:
-    RecordIterator(Heapfile *heapfile):heapfile(heapfile),pid(0),slot(0) {};
+    RecordIterator(Heapfile *heapfile);
     Record next();
     bool hasNext();
-    RecordID currentRID();
+    RecordID nextRID();
 private:
+    void increment_iterator();
     Heapfile *heapfile;
     PageID pid;
     int slot;
+    bool has_next;
 };
 
 #endif

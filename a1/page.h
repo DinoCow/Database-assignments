@@ -59,4 +59,8 @@ void read_fixed_len_page(Page *page, int slot, Record *r);
  */
 void delete_fixed_len_page(Page *page, int slot);
 
+
+
+//get next slot after `slot` that contains a record
+int get_next_filled_slot(Page *page, int slot);
 #endif

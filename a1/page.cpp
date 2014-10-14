@@ -162,3 +162,25 @@ void delete_fixed_len_page(Page *page, int slot){
 	((char *)page->data)[index] &= ~(1 << (slot % 8));
 
 }
+
+
+
+//get next slot after `slot` that contains a record
+int get_next_filled_slot(Page *page, int slot) {
+
+	int numRecs = fixed_len_page_capacity(page);
+
+	slot++;
+	while (slot < numRecs){
+		int index = page->page_size -1 -(slot/8);
+		int bit = slot % 8;
+		char bit_fld = ((char *)page->data)[index];
+		if (bit_fld & (1 << bit)) {
+			return slot;
+		}
+		else {
+			slot++;
+		}
+	}
+	return -1;
+}

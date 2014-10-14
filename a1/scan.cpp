@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     RecordIterator rit(heapfile);
 
     while(rit.hasNext()) {
-    	RecordID rid = rit.currentRID();
+    	RecordID rid = rit.nextRID();
     	Record rec = rit.next();
     	cout << "RID("<< rid.page_id << "," << rid.slot << ") ";
     	print_record_as_csv(&rec);

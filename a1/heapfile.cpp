@@ -40,7 +40,6 @@ void open_heapfile(Heapfile *heapfile, char *filename) {
 	heapfile->file_ptr = fopen(filename, "r+");
 	assert(heapfile->file_ptr);
 
-
 	int offset = 0;
 	do {
 	//create the directory page
@@ -307,8 +306,10 @@ PageID append_entry(Heapfile *heapfile, Entry *entry) {
 	// get entry from pid
 Entry *get_entry(Heapfile *heapfile, PageID pid) {
 
-	fprintf(stderr,"get entry:(%d)\n", pid);
+	fprintf(stderr,"get entry pid:(%d)\n", pid);
 	int capacity = heapfile->directory_buffer[0]->capacity;
+
+	fprintf(stderr,"  dbuffer size=(%lu)\n", heapfile->directory_buffer.size());
 
 	fprintf(stderr,"  Capacity(%d)\n", capacity);
 
@@ -338,6 +339,15 @@ PageID vacant_page_id(Heapfile *heapfile){
 	return -1;
 }
 
+
+RecordIterator::RecordIterator(Heapfile *heap){
+
+	heapfile = heap;
+	pid = 0;
+	slot = -1;
+	increment_iterator();
+}
+
 Record RecordIterator::next(){
 
 	Page *page = new Page;
@@ -349,58 +359,52 @@ Record RecordIterator::next(){
 	free_page(page);
 	
 	// Increment iterator
-	int capacity = fixed_len_page_capacity(page);
-	slot++;
-	if (slot >= capacity) {
-		slot=0;
-		pid++;
-	}
-
+	increment_iterator();
 	return record;
 }
 
-bool RecordIterator::hasNext() {
-	bool has_next;
-	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
 
-	// Increment iterator
-	int capacity = fixed_len_page_capacity(page);
+void RecordIterator::increment_iterator(){
 
-	fprintf(stderr,"slot:%d/%d pid%d\n", slot, capacity, pid);
-	
 	int dir_capacity = heapfile->directory_buffer[0]->capacity;
-	
 	int dir_no = pid / dir_capacity;
 	int slot_no = pid % dir_capacity;
 
-	fprintf(stderr,"NENTRIES:%d/%d\nSIZEOF %lu\n", dir_no, dir_capacity,heapfile->directory_buffer.size());
 	Directory *dir = heapfile->directory_buffer[dir_no];
+	bool page_is_allocated = (slot_no < *dir->n_entries);
+	// (slot_no < *dir->n_entries) // page exists according to directory
 	
-	fprintf(stderr,"NENTRIES:%d\n", *(dir->n_entries));
-	
-	if(!(slot_no < *dir->n_entries)) {
-		fprintf(stderr,"no more entries %d >= %d\n", slot_no, *(dir->n_entries));
-		has_next = false;
-	} else {
+	//while (page_is_allocated(pid)) {
+	while(page_is_allocated) {
+		//get page (pid)
+		Page *page = new Page;
+		init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
 		get_page(heapfile, pid, page);
 
-		int index = page->page_size - ceil((slot+1) / 8.0);
-		int valid = ((char *)page->data)[index] & (1 << (slot % 8));
-		char byte = ((char *)page->data)[index];
-		
-		fprintf(stderr,"Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
+		//get next slot after `slot` that contains a record
+		slot = get_next_filled_slot(page, slot);
 
-		has_next = (valid > 0);
-		if (!has_next) {
-			fprintf(stderr,"no more entries %d >= %d\n", slot, capacity);
+		if (slot >= 0 ) {// next slot exists
+			//all good.
+			return;
+		} else { // bitset exhausted
+			//try next page
+			pid++;
+			dir_no = pid / dir_capacity;
+			slot_no = pid % dir_capacity;
+			dir = heapfile->directory_buffer[dir_no];
+			page_is_allocated = (slot_no < *dir->n_entries);
 		}
 	}
-	free_page(page);
+	// exhausted all pages. No more records in heapfile.
+	has_next = false;
+}
+
+bool RecordIterator::hasNext() {
 	return has_next;
 }
 
-RecordID RecordIterator::currentRID(){
+RecordID RecordIterator::nextRID(){
 	RecordID rid;
 	rid.page_id = pid;
 	rid.slot = slot;
