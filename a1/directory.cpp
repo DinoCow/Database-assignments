@@ -11,11 +11,11 @@ void init_directory_page(Directory *directory, int page_size, int offset){
 	assert (capacity > 0);
 	
 	directory->data = new char[page_size]();
-	directory->n_entries = (int*) (directory->data + sizeof(int));
+	directory->n_entries = (int*) ((char *) directory->data + sizeof(int));
 	*directory->n_entries = 0;
 	directory->capacity = capacity;
 	directory->next_directory = (int*) directory->data;
-	directory->entries = (Entry*) (directory->data + sizeof(int) * 2);
+	directory->entries = (Entry*) ((char *) directory->data + sizeof(int) * 2);
 	//fprintf(stdout, "INIT DIRECTORY data:%p\n",directory->data);
 	//fprintf(stdout, "INIT DIRECTORY entry:%p\n",directory->entries);
 	directory->offset = offset;

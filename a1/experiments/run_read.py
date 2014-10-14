@@ -22,6 +22,9 @@ perf_x = []
 perf_y = []
 for sz in page_size:
     p = Popen(
+        ['../write_fixed_len_pages', filename, page_file, '%d' % sz],
+        stdout=PIPE)
+    p = Popen(
         ['../read_fixed_len_pages', page_file, '%d' % sz],
         stdout=PIPE)
     s = p.stdout.read().strip()
