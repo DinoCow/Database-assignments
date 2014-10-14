@@ -26,7 +26,7 @@ perf_x = []
 perf_y = []
 for sz in page_size:
     p = Popen(
-        ['../select3', colstore, '%d' % attribute_id, return_attribute_id ,start, end , '%d' % sz],
+        ['../select3', colstore, '%d' % attribute_id, '%d' % return_attribute_id ,start, end , '%d' % sz],
         stdout=PIPE)
     s = p.stdout.read().strip()
     print '>%s' % s
