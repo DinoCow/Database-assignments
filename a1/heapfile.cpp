@@ -110,10 +110,10 @@ void put_record(Heapfile* heapfile, Record *rec) {
 	init_fixed_len_page(page2, heapfile->page_size, SLOTSIZE);
 	get_page(heapfile, pid, page2);
 
-	char byte2 = ((char *)page->data)[index];
+	char byte2 = ((char *)page2->data)[index];
 	fprintf(stderr,"PUTRECORD ===== Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte2));
 	assert(byte==byte2);
-	free_page(page);
+	free_page(page2);
 	//---
 }
 
