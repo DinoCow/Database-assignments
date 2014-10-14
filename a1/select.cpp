@@ -13,6 +13,7 @@
 #include <vector>
 
 using namespace std;
+const int SLOT_SIZE = 1000;	// Size of a record
 
 long get_time_ms()
 {
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
 
 	long start = get_time_ms();
 	Heapfile *heapfile = new Heapfile;
-	init_heapfile(heapfile, page_size);
+	init_heapfile(heapfile, page_size, SLOT_SIZE);
 	open_heapfile(heapfile, heapfile_name);
 	char buf[6];
     RecordIterator rit(heapfile);

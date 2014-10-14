@@ -8,13 +8,14 @@
 /**
  * Initalize a heapfile to use the file and page size given.
  */
-void init_heapfile(Heapfile *heapfile, int page_size) {
+void init_heapfile(Heapfile *heapfile, int page_size, int slot_size) {
 	assert(page_size > 1001);
 
 	heapfile->page_size = page_size;
 	heapfile->cached_page = NULL;
 	heapfile->cached_pid = -1;
 	heapfile->page_cache_dirty = false;
+	heapfile->slot_size = slot_size;
 }
 
 /**
@@ -76,8 +77,8 @@ void close_heapfile(Heapfile *heapfile) {
 
 		//DEBUG PURPOSE
 		int num_records = 0;
-		int directorySize = ceil(heapfile->page_size/SLOTSIZE/8.0);
-		int page_capacity = (heapfile->page_size - directorySize)/SLOTSIZE;
+		int directorySize = ceil(heapfile->page_size/heapfile->slot_size/8.0);
+		int page_capacity = (heapfile->page_size - directorySize)/heapfile->slot_size;
 
 		for(int i=0; i<*dir->n_entries; i++){
 			num_records += page_capacity - dir->entries[i].free_space;
@@ -175,7 +176,7 @@ Page *get_page(Heapfile *heapfile, PageID pid) {
 
 	//load new page
 	Page *page = new Page;
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	init_fixed_len_page(page, heapfile->page_size, heapfile->slot_size);
 
 	Entry *entry = get_entry(heapfile, pid);
 
@@ -196,7 +197,7 @@ PageID alloc_page(Heapfile *heapfile){
 	Page *page = new Page; 	
 
 	//Create the new page
-	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+	init_fixed_len_page(page, heapfile->page_size, heapfile->slot_size);
 
 	//assign entry pointers
 	fseek(heapfile->file_ptr, 0, SEEK_END);

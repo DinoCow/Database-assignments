@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
 	long start = get_time_ms();
 	Heapfile *heapfile = new Heapfile;
-	init_heapfile(heapfile, page_size);
+	init_heapfile(heapfile, page_size, SLOT_SIZE);
 	create_heapfile(heapfile, heapfile_name);
 
 	char line[MAX_LINE_LEN];
