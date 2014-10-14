@@ -26,7 +26,7 @@ for sz in page_size:
         stdout=PIPE)
     s = p.stdout.read().strip()
     print '>%s' % s
-    perf_y.append( float(re.findall(r'\d+', s)[0]) * num_of_rec / 1000)
+    perf_y.append( num_of_rec/ (float(re.findall(r'\d+', s)[0]) * 1000))
     perf_x.append( sz)
 
 import matplotlib
