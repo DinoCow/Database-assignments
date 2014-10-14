@@ -21,7 +21,7 @@ typedef struct {
     FILE *file_ptr;
     int page_size;
     std::vector<Directory*> directory_buffer;
-
+    // The following variables are used for page cache
     Page *cached_page;
     PageID cached_pid;
     bool page_cache_dirty;

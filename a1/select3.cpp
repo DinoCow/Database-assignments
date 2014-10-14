@@ -41,7 +41,6 @@ int main(int argc, char** argv) {
 
 	long start = get_time_ms();
 	char filename[20];
-	sprintf(filename, "%s/%d", directory_name, attribute_id);
 	
 	Heapfile *heapfile = new Heapfile;
 	init_heapfile(heapfile, page_size);
@@ -59,7 +58,6 @@ int main(int argc, char** argv) {
     }
     close_heapfile(heapfile);
 
-    sprintf(filename, "%s/%d", directory_name, return_attribute_id);
     heapfile = new Heapfile;
     init_heapfile(heapfile, page_size);
 	open_heapfile(heapfile, filename);

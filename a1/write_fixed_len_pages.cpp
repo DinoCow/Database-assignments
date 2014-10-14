@@ -29,7 +29,6 @@ void load_record(Record * record, char line[])
 	char *attribute;
 	token = strtok(line, ",");
 	while (token != NULL) {
-		//printf ("%s\n",token);
 		attribute = new char[ATTRIBUTE_SIZE + 1];
 
 		strncpy(attribute, token, ATTRIBUTE_SIZE);
@@ -90,7 +89,6 @@ int main(int argc, char *argv[])
 		}
 		//Free char arrays in record
 		for (unsigned int i = 0; i < rec.size(); i++) {
-			//printf("attr:%s\n", rec[i]);
 			delete[]rec[i];
 		}
 	}

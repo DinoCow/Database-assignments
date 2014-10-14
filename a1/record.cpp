@@ -74,7 +74,6 @@ void load_csv_record(Record * record, char line[])
 	char *attribute;
 	token = strtok(line, ",");
 	while (token != NULL) {
-		//printf ("%s\n",token);
 		attribute = new char[ATTRIBUTE_SIZE + 1];
 
 		strncpy(attribute, token, ATTRIBUTE_SIZE);
@@ -95,7 +94,6 @@ void load_col_record(Record * record, char* token, int tupleId){
 	tupId = new char[ATTRIBUTE_SIZE + 1];
 	attribute = new char[ATTRIBUTE_SIZE + 1];
 
-	sprintf(tupId,"%d",tupleId);
 	strncpy(attribute, token, ATTRIBUTE_SIZE);
 	tupId[ATTRIBUTE_SIZE] = '\0';
 	attribute[ATTRIBUTE_SIZE] = '\0';

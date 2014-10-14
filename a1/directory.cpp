@@ -16,13 +16,10 @@ void init_directory_page(Directory *directory, int page_size, int offset){
 	directory->capacity = capacity;
 	directory->next_directory = (int*) directory->data;
 	directory->entries = (Entry*) ((char *) directory->data + sizeof(int) * 2);
-	//fprintf(stdout, "INIT DIRECTORY data:%p\n",directory->data);
-	//fprintf(stdout, "INIT DIRECTORY entry:%p\n",directory->entries);
 	directory->offset = offset;
 }
 
 bool is_full(Directory* directory){
-	fprintf(stderr, "is full %d/%d\n",*directory->n_entries, directory->capacity);
 		
 	return (*directory->n_entries == directory->capacity);
 }
@@ -42,7 +39,6 @@ int next_vacant_slot(Directory* directory){
 int find_free_page(Directory* directory){
 	for(int i=0; i<*directory->n_entries; i++){
 		if (directory->entries[i].free_space > 0) {
-			fprintf(stderr, "find_free_page dir->entries[%d].free_space=%d\n",i, directory->entries[i].free_space);
 		
 			return i;
 		}

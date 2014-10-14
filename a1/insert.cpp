@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
 		
 		//Free char arrays in record
 		for (unsigned int i = 0; i < rec.size(); i++) {
-			//printf("attr:%s\n", rec[i]);
 			delete[]rec[i];
 		}
 	}

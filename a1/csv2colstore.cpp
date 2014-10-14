@@ -53,9 +53,6 @@ int main(int argc, char** argv) {
 	//split line on ','
 	token = strtok(line, ",");
 	while (token != NULL) {
-		//printf ("%s\n",token);
-		sprintf(filename, "%s/%d", directory_name, attribute_id);
-		//printf("%s\n", filename);
 		heapfile = new Heapfile;
 		init_heapfile(heapfile, page_size);
 		create_heapfile(heapfile, filename);
@@ -68,7 +65,6 @@ int main(int argc, char** argv) {
 		
 		//Free char arrays in record
 		for (unsigned int i = 0; i < rec.size(); i++) {
-			//printf("attr:%s\n", rec[i]);
 			delete[]rec[i];
 		}
 
@@ -89,7 +85,6 @@ int main(int argc, char** argv) {
 		
 			//Free char arrays in record
 			for (unsigned int i = 0; i < rec.size(); i++) {
-				//printf("attr:%s\n", rec[i]);
 				delete[]rec[i];
 			}
 
