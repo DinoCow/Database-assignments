@@ -77,19 +77,18 @@ PageID append_entry(Heapfile *heapfile, Entry *entry);
 // get entry from pid
 Entry *get_entry(Heapfile *heapfile, PageID pid);
 
+PageID vacant_page_id(Heapfile *heapfile);
+
 class RecordIterator {
 public:
-    RecordIterator(Heapfile *heapfile):heapfile(heapfile),pid(0),slot(0), has_next(true){};
+    RecordIterator(Heapfile *heapfile):heapfile(heapfile),pid(0),slot(0) {};
     Record next();
-    bool hasNext() { return has_next; }
+    bool hasNext();
     RecordID currentRID();
 private:
     Heapfile *heapfile;
     PageID pid;
     int slot;
-    bool has_next;
 };
-
-PageID vacant_page_id(Heapfile *heapfile);
 
 #endif

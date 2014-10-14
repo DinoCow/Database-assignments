@@ -339,10 +339,11 @@ PageID vacant_page_id(Heapfile *heapfile){
 }
 
 Record RecordIterator::next(){
-	Page *page = new Page;
-	Record record(100);
 
+	Page *page = new Page;
 	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+
+	Record record(100);
 	get_page(heapfile, pid, page);
 	read_fixed_len_page(page, slot, &record);
 	free_page(page);
@@ -354,14 +355,26 @@ Record RecordIterator::next(){
 		slot=0;
 		pid++;
 	}
+
+	return record;
+}
+
+bool RecordIterator::hasNext() {
+	bool has_next;
+	Page *page = new Page;
+	init_fixed_len_page(page, heapfile->page_size, SLOTSIZE);
+
+	// Increment iterator
+	int capacity = fixed_len_page_capacity(page);
+
 	fprintf(stderr,"slot:%d/%d pid%d\n", slot, capacity, pid);
 	
-	int capacity2 = heapfile->directory_buffer[0]->capacity;
+	int dir_capacity = heapfile->directory_buffer[0]->capacity;
 	
-	int dir_no = pid / capacity2;
-	int slot_no = pid % capacity2;
+	int dir_no = pid / dir_capacity;
+	int slot_no = pid % dir_capacity;
 
-	fprintf(stderr,"NENTRIES:%d/%d\nSIZEOF %lu\n", dir_no, capacity2,heapfile->directory_buffer.size());
+	fprintf(stderr,"NENTRIES:%d/%d\nSIZEOF %lu\n", dir_no, dir_capacity,heapfile->directory_buffer.size());
 	Directory *dir = heapfile->directory_buffer[dir_no];
 	
 	fprintf(stderr,"NENTRIES:%d\n", *(dir->n_entries));
@@ -370,13 +383,11 @@ Record RecordIterator::next(){
 		fprintf(stderr,"no more entries %d >= %d\n", slot_no, *(dir->n_entries));
 		has_next = false;
 	} else {
-		Page *page2 = new Page;
-		init_fixed_len_page(page2, heapfile->page_size, SLOTSIZE);
-		get_page(heapfile, pid, page2);
+		get_page(heapfile, pid, page);
 
-		int index = page2->page_size - ceil((slot+1) / 8.0);
-		int valid = ((char *)page2->data)[index] & (1 << (slot % 8));
-		char byte = ((char *)page2->data)[index];
+		int index = page->page_size - ceil((slot+1) / 8.0);
+		int valid = ((char *)page->data)[index] & (1 << (slot % 8));
+		char byte = ((char *)page->data)[index];
 		
 		fprintf(stderr,"Bitset "BYTETOBINARYPATTERN"\n", BYTETOBINARY(byte));
 
@@ -384,11 +395,9 @@ Record RecordIterator::next(){
 		if (!has_next) {
 			fprintf(stderr,"no more entries %d >= %d\n", slot, capacity);
 		}
-		free_page(page2);
 	}
-	
-
-	return record;
+	free_page(page);
+	return has_next;
 }
 
 RecordID RecordIterator::currentRID(){
