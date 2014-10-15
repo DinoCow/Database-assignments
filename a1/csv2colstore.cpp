@@ -25,7 +25,7 @@ long get_time_ms()
 int main(int argc, char** argv) {
 	if (argc != 4) {
 		cerr <<
-		    "Usage: csv2heapfile <csv_file> <colstore_name> <page_size>"
+		    "Usage: csv2colstore <csv_file> <colstore_name> <page_size>"
 		    << endl;
 		return (1);
 	}

@@ -1,6 +1,7 @@
 from subprocess import Popen, PIPE
 import sys
 import re
+import time
 
 heapfile = "heapfile"
 attribute_id = 0;
@@ -28,6 +29,7 @@ for sz in page_size:
     p = Popen(
         ['../csv2heapfile', filename, heapfile, '%d' % sz],
         stdout=PIPE)
+    time.sleep(1)
     p = Popen(
         ['../select', heapfile, '%d' % attribute_id, start, end , '%d' % sz],
         stdout=PIPE)

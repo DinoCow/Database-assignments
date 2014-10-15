@@ -1,6 +1,7 @@
 from subprocess import Popen, PIPE
 import sys
 import re
+import time
 
 colstore = "../colstore"
 attribute_id = 0;
@@ -29,6 +30,7 @@ for sz in page_size:
     p = Popen(
         ['../csv2colstore', filename, colstore, '%d' % sz],
         stdout=PIPE)
+    time.sleep(1)
     p = Popen(
         ['../select3', colstore, '%d' % attribute_id, '%d' % return_attribute_id ,start, end , '%d' % sz],
         stdout=PIPE)
