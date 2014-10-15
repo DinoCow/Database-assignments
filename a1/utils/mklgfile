@@ -1,0 +1,10 @@
+#!/bin/bash
+
+python ./mkcsv.py csvFile 1000
+
+for i in {1..1000}
+do
+	cat csvFile >> lgFile
+done
+
+rm csvFile
