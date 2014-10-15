@@ -1,6 +1,7 @@
 from subprocess import Popen, PIPE
 import sys
 import re
+import time
 
 filename = "test.csv"
 page_file = "pagefile"
@@ -24,6 +25,7 @@ for sz in page_size:
     p = Popen(
         ['../write_fixed_len_pages', filename, page_file, '%d' % sz],
         stdout=PIPE)
+    time.sleep(1)
     p = Popen(
         ['../read_fixed_len_pages', page_file, '%d' % sz],
         stdout=PIPE)
