@@ -39,3 +39,8 @@ select3
 *.db
 *.csv
 *~
+
+bsort
+msort
+read_fixed_len_pages
+write_fixed_len_pages

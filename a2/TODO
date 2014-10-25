@@ -1,0 +1,52 @@
+preparation
+=========
+
+Starter code for merge sort assignment
+Already downloaded leveldb and jsoncpp. All you need to do is run make.
+
+
+Note: Please do not be afraid of leveraging C++ features instead of writing "C with classes" i.e. std::string, iostream, std::sort, classes, references instead of pointers where applicable etc. and let's avoid C functions like printf, malloc, free and instead use std::cout, new, delete etc.  I suppose <cassert> is an exception.
+
+
+test data generation
+====================
+Write scripts to generate test data based on a json schema with the following distributions.
+
+- Uniform distribution
+- Normal distribution
+
+
+multiway mergesort
+==================
+
+Load json object into struct.
+Pass 0 (create runs in memory)
+Run Iterator class - iterate over a single run using buffered I/O
+Merge function - merge runs using up to `buf_size` memory
+k-way merge executable - 
+msort <schema_file> <input_file> <out_file> <mem_capacity> <k> <sorting_attributes>
+
+Experiments:
+Write scripts to run msort and generate plots.
+- Measure the performance trend of msort with respect to different file sizes.
+- Measure the performance trend of msort with respect to different total memory allowed.
+- Measure the performance trend of msort with respect to different choices of k.
+Report on the results.
+
+
+sorting using B+ tree
+=====================
+
+bsort executable - 
+bsort  <schema_file> <input_file> <out_index> <sorting_attributes>
+
+Use leveldb to build a B+ tree index and write the sorted records
+
+Experiments:
+Write scripts to run msort & bsort and generate plots.
+
+Compare the performance of msort against bsort with respect to different file sizes
+- using bsort
+- using msort with somewhat poorly chosen parameters
+- using msort with well tuned parameters
+Report on the results.
