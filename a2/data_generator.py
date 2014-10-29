@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 You should implement this script to generate test data for your
 merge sort program.
@@ -15,6 +16,7 @@ def generate_data(schema, out_file, nrecords):
       {
         'name' : <attribute_name>, 
         'length' : <fixed_length>,
+        type integer, float, string
         ...
       },
       ...
@@ -25,8 +27,58 @@ def generate_data(schema, out_file, nrecords):
   '''
   print "Generating %d records" % nrecords
 
+
+  record_generators = create_record_generators(schema)
+  
+  with open(out_file, 'w') as csv_file:
+    for i in xrange(nrecords):
+
+      column = [str(gen()) for gen in record_generators]
+      line = ",".join(column)
+      csv_file.write(line)
+      csv_file.write("\n")
+
+
+def create_record_generators(schema):
+  '''Return a list of functions which generates random values based 
+  on the schema'''
+  # TODO
+  
+  generators = []
+  for attr in schema:
+    if attr["type"] == "string":
+      function = partial(random_str, attr["length"])
+    elif attr["type"] == "integer":
+      if "distribution" in attr:
+        function = rand_int_generator(attr["length"], attr["distribution"])
+      else:
+        function = partial(random.randint, 0,attr["length"])
+    elif attr["type"] == "float":
+      if "distribution" in attr:
+        function = rand_float_generator(attr["length"], attr["distribution"])
+      else:
+        function = partial(random.randint, 0,attr["length"])
+    else:
+      pass
+    generators.append(random.random)
+
+  return generators
+
+def rand_int_generator(length, dist):
+  if dist["name"] == "uniform":
+    random.randint(dist["min"], dist["max"])
+  elif dist["name"] == "normal":
+
+
+    random.normalvariate(dist["mu"], dist["sigma"])
+
+def random_str(length):
+  return "".join([random.choice(string.ascii_letters) for n in xrange(length)])
+
 if __name__ == '__main__':
-  import sys, json
+  import sys, json, random, string
+  from functools import partial
+  from pprint import pprint
   if not len(sys.argv) == 4:
     print "data_generator.py <schema json file> <output csv file> <# of records>"
     sys.exit(2)
@@ -34,7 +86,7 @@ if __name__ == '__main__':
   schema = json.load(open(sys.argv[1]))
   output = sys.argv[2]
   nrecords = int(sys.argv[3])
-  print schema
+  pprint( schema )
   
   generate_data(schema, output, nrecords)
 
