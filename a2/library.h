@@ -9,6 +9,7 @@ using namespace std;
  */
 typedef struct {
   string name;
+  string type;
   int length;
 } Attribute;
 

@@ -12,12 +12,10 @@ using namespace std;
 static int records_per_buffer(long mem_capacity, Schema &schema){
 
   int record_size = 0;
-  for (int i = 0; i < schema.attrs.size(); ++i) {
+  for (size_t i = 0; i < schema.attrs.size(); ++i) {
     record_size += schema.attrs[i].length;
   }
 
-  cout << "record size: " << record_size << endl;
-  cout << "rpb: " << mem_capacity / record_size << endl;
   return mem_capacity / record_size;
 
 }
@@ -53,16 +51,20 @@ int main(int argc, const char* argv[]) {
   Schema schema;
 
   // Print out the schema
-  string attr_name;
+  string attr_name, attr_type;
   int attr_len;
   for (int i = 0; i < json_value.size(); ++i) {
-    attr_name = json_value[i].get("name", "UTF-8" ).asString();
+    attr_name = json_value[i].get("name", "UTF-8").asString();
+    attr_type = json_value[i].get("type", "UTF-8").asString();
     attr_len = json_value[i].get("length", "UTF-8").asInt();
 
-    Attribute attr = {attr_name, attr_len};
+    Attribute attr = {attr_name, attr_type, attr_len};
     schema.attrs.push_back(attr);
 
-    cout << "{name : " << attr_name << ", length : " << attr_len << "}" << endl;
+    cout << "{name : " << attr_name 
+    << ", length : " << attr_len 
+    << ", type : " << attr_type 
+    << "}" << endl;
   }
 
   // Do the sort
@@ -72,11 +74,13 @@ int main(int argc, const char* argv[]) {
     perror("Open input file");
     exit(1);
   }
+  // Maybe use tmpfile() but for now it's good for debugging
   FILE *tmp_out_fp = fopen("/tmp/partially_sorted", "w");
   if (!tmp_out_fp) {
     perror("Open temporary output file");
     exit(1);
   }
+
   long run_length = records_per_buffer(mem_capacity, schema);
 
   mk_runs(in_fp, tmp_out_fp, run_length, &schema);
