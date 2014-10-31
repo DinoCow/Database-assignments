@@ -32,7 +32,6 @@ def generate_data(schema, out_file, nrecords):
   
   with open(out_file, 'w') as csv_file:
     for i in xrange(nrecords):
-      print record_generators
       column = [str(gen()) for gen in record_generators]
       line = ",".join(column)
       csv_file.write(line)
@@ -72,10 +71,10 @@ def create_record_generators(schema):
 
 def rand_int_generator(length, dist):
   if dist["name"] == "uniform":
-    return str(random.randint(dist["min"], dist["max"]))[:length]
+    return str(random.randint(dist["min"], dist["max"]))
   
   elif dist["name"] == "normal":
-    return str(random.gauss(dist["mu"], dist["sigma"]))[:length] # have to floor or ceiling this? 
+    return str(round(random.gauss(dist["mu"], dist["sigma"])))
 
 def random_str(length):
   return "".join([random.choice(string.ascii_letters) for n in xrange(length)])
