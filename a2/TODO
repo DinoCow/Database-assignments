@@ -50,3 +50,13 @@ Compare the performance of msort against bsort with respect to different file si
 - using msort with somewhat poorly chosen parameters
 - using msort with well tuned parameters
 Report on the results.
+
+Experiment
+==========
+
+Plot the performances of different ways of sorting against varying file sizes. Plot the performance of at least three ways of sorting:
+
+using bsort
+using msort with somewhat poorly chosen
+parameters
+using msort with a well tuned parameters
