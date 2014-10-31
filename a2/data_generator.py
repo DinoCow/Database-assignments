@@ -32,7 +32,7 @@ def generate_data(schema, out_file, nrecords):
   
   with open(out_file, 'w') as csv_file:
     for i in xrange(nrecords):
-
+      print record_generators
       column = [str(gen()) for gen in record_generators]
       line = ",".join(column)
       csv_file.write(line)
@@ -48,32 +48,45 @@ def create_record_generators(schema):
   for attr in schema:
     if attr["type"] == "string":
       function = partial(random_str, attr["length"])
+    
     elif attr["type"] == "integer":
+
       if "distribution" in attr:
-        function = rand_int_generator(attr["length"], attr["distribution"])
+        function = partial(rand_int_generator, attr["length"], attr["distribution"])
       else:
-        function = partial(random.randint, 0,attr["length"])
+        function = partial(random.randint, 0, attr["length"])
+
     elif attr["type"] == "float":
+
       if "distribution" in attr:
-        function = rand_float_generator(attr["length"], attr["distribution"])
+        function = partial(rand_float_generator, attr["length"], attr["distribution"])
       else:
-        function = partial(random.randint, 0,attr["length"])
+        function = partial(random.randint, 0, attr["length"])
+
     else:
       pass
-    generators.append(random.random)
+
+    generators.append(function)
 
   return generators
 
 def rand_int_generator(length, dist):
   if dist["name"] == "uniform":
-    random.randint(dist["min"], dist["max"])
+    return str(random.randint(dist["min"], dist["max"]))[:length]
+  
   elif dist["name"] == "normal":
-
-
-    random.normalvariate(dist["mu"], dist["sigma"])
+    return str(random.gauss(dist["mu"], dist["sigma"]))[:length] # have to floor or ceiling this? 
 
 def random_str(length):
   return "".join([random.choice(string.ascii_letters) for n in xrange(length)])
+
+def rand_float_generator(length, dist):
+  if dist["name"] == "uniform":
+    return str(random.uniform(dist["min"], dist["max"]))[:length] 
+
+  elif dist["name"] == "normal":
+    return str(random.gauss(dist["mu"], dist["sigma"]))[:length]
+
 
 if __name__ == '__main__':
   import sys, json, random, string
