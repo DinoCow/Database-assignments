@@ -74,7 +74,7 @@ def rand_int_generator(length, dist):
     return str(random.randint(dist["min"], dist["max"]))
   
   elif dist["name"] == "normal":
-    return str(round(random.gauss(dist["mu"], dist["sigma"])))
+    return str(round(gaussian_generator(dist)))
 
 def random_str(length):
   return "".join([random.choice(string.ascii_letters) for n in xrange(length)])
@@ -84,8 +84,13 @@ def rand_float_generator(length, dist):
     return str(random.uniform(dist["min"], dist["max"]))[:length] 
 
   elif dist["name"] == "normal":
-    return str(random.gauss(dist["mu"], dist["sigma"]))[:length]
+    return str(gaussian_generator(dist))[:length]
 
+def gaussian_generator(dist):
+  x = dist["min"] - 1
+  while ( dist["min"] > x or x > dist["max"]):
+    x = random.gauss(dist["mu"], dist["sigma"])
+  return x
 
 if __name__ == '__main__':
   import sys, json, random, string
