@@ -9,6 +9,13 @@
 
 using namespace std;
 
+// <algorithm> std::swap also works
+static void swap_fp(FILE **a, FILE **b){
+  FILE *tmp = *a;
+  *a = *b;
+  *b = tmp;
+}
+
 static int records_per_buffer(long mem_capacity, Schema &schema){
 
   int record_size = 0;
@@ -58,7 +65,21 @@ int main(int argc, const char* argv[]) {
     attr_type = json_value[i].get("type", "UTF-8").asString();
     attr_len = json_value[i].get("length", "UTF-8").asInt();
 
-    Attribute attr = {attr_name, attr_type, attr_len};
+    //todo ctor
+    Attribute attr;
+    attr.name = attr_name;
+    attr.length = attr_len;
+    if (attr_type == "interger"){
+      attr.type = INT;
+    } else if (attr_type == "float") {
+      attr.type = FLOAT;
+    } else if (attr_type == "string") {
+      attr.type = STRING;
+    } else {
+      //TODO error
+    }
+
+
     schema.attrs.push_back(attr);
 
     cout << "{name : " << attr_name 
@@ -66,6 +87,9 @@ int main(int argc, const char* argv[]) {
     << ", type : " << attr_type 
     << "}" << endl;
   }
+
+  schema.comparator = new RecordComparator(schema.attrs, sorting_attributes);
+
 
   // Do the sort
 
@@ -75,39 +99,84 @@ int main(int argc, const char* argv[]) {
     exit(1);
   }
   // Maybe use tmpfile() but for now it's good for debugging
-  FILE *tmp_out_fp = fopen("/tmp/partially_sorted", "w");
+  FILE *tmp_out_fp = fopen("/tmp/output", "w");
   if (!tmp_out_fp) {
     perror("Open temporary output file");
     exit(1);
   }
-
-  long run_length = records_per_buffer(mem_capacity, schema);
-
-  mk_runs(in_fp, tmp_out_fp, run_length, &schema);
-  
-
-
-  /*** This is pretty much pseudo code 
-  
-  char *buf = new char[buf_size];
-  long start_pos = 0;
-
-  for (long n = run_length; n < num_records; n *= k)
-  {
-    //Create k iterators that read in n-sorted input file
-    RunIterator[k] iterators;
-
-    merge_runs(iterators, k, temp_out_fp, start_pos, buf, buf_size);
-
-    start_pos += buf_size;
-    swap(n_sorted_fp, tmp_out_fp);
+  FILE *tmp_in_fp = fopen("/tmp/input", "w");
+  if (!tmp_in_fp) {
+    perror("Open temporary input file");
+    exit(1);
   }
 
+  // length of sorted segments
+  const long run_length = records_per_buffer(mem_capacity, schema);
+  const int num_records = mk_runs(in_fp, tmp_out_fp, run_length, &schema);
   
-  FILE *out_fp = fopen(output_file, "w");
-  write_sorted_records(tmp_out_fp, output_file);
+  // swap the file pointers so the n-sorted segments become tmp_in_fp
+  // this makes the part below easier to understand.
+  swap_fp(&tmp_in_fp, &tmp_out_fp);
+
+  // divide avail. memory into k + 1 chunks
+  // 1 is for merge output buffer
+  const int buf_size = mem_capacity / (k+1);
+  char *merge_buf = new char[buf_size];
   
-  */
+
+  //const int num_runs = num_records / run_length;
+  //  long output_pos = 0;
+  //  long start_pos = 0;
+
+// n is the current length of sorted segments
+  for (int n = run_length; n < num_records; n = n * k){
+    //merge(D,E,n)// E is kn sorted
+    /**************************************
+
+    RunIterator *iterators[k];
+    Record* buf[k];
+ 
+    for(int offset=0; offset < num_records; offset += n*k) {
+        // initialize streams and merge buffer
+        for (int i = 0; i < k; i++){
+          // TODO adjust n size of thingo
+          iterators[k] = new RunIterator(tmp_in_fp, offset+i*n, 
+            n, buf_size, &schema);
+
+          if (iterators[i]->has_next()) {
+            min_heap.push(iterators[i]->next());
+          }
+          buf[i] = iterators[i]->has_next() ? iterators[i]->next() : inf;
+          //start_pos += run_length;
+        }
+
+        // perform (up to) k-way merge
+        //merge_runs(iterators, k, tmp_out_fp, output_pos, merge_buf, buf_size);
+        int min_val, min_idx;
+        do {
+            min_val, min_idx = get_minimum(buf);
+
+            //fwrite(buf, record_size, num_records, out_fp);
+            buf[min_idx] = iterators[min_idx].next();
+ 
+        } while(!all_iterators_exhausted());
+
+
+
+        // Free Iterators
+        for (int i=0; i<k; i++){
+          delete iterators[k];
+        }
+    }
+    ***************************************/
+    // tmp_out_fp is kn sorted
+    swap_fp(&tmp_in_fp, &tmp_out_fp);
+  }
+  
+  //FILE *out_fp = fopen(output_file, "w");
+  //write_sorted_records(tmp_out_fp, output_file);
+  
+  
 
   return 0;
 }
