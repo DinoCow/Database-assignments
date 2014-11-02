@@ -24,6 +24,7 @@ void parseKey(vector<string>& v, string s)
 		// +1 to erase comma
 		s.erase(0, pos+1);
 	}
+	// The last part of "s" is the counter - we ignore it for comparison
 	v.push_back(s);
 }
 
@@ -40,10 +41,11 @@ class TwoPartComparator : public leveldb::Comparator {
 
 			parseKey(a_vec, a.ToString());
 			parseKey(b_vec, b.ToString());
+			int size = a_vec.size() - 1;
 
 			// a_vec and b_vec should have the same size
 			// Increment by two because after each value is followed by its type
-			for (int i = 0; i < a_vec.size() - 1; i = i + 2)
+			for (int i = 0; i < size; i = i + 2)
 			{
 				string type = a_vec[i+1];
 				
@@ -71,6 +73,10 @@ class TwoPartComparator : public leveldb::Comparator {
 					if (cmp > 0) return 1;
 				}
 			}
+
+			// If the same values - base on the counter or will ignore duplicate
+			if (a_vec[size] < b_vec[size]) return -1;
+			if (a_vec[size] > b_vec[size]) return 1;
 
 			return 0;
 		}
@@ -115,7 +121,7 @@ int lenth_to_index(int index, Schema *schema)
 
 // Get the key for the record (line)
 // The key is the list of attributes in order of sorted_attributes
-string get_key(char *line, Schema *schema) 
+string get_key(char *line, Schema *schema, int unique_counter) 
 {
 	string key;
 
@@ -147,6 +153,7 @@ string get_key(char *line, Schema *schema)
 			key = key + attribute + "," + "string";
 	}
 
+	key = key + "," + to_string(unique_counter);
 	return key;
 }
 
@@ -227,15 +234,18 @@ int main(int argc, const char* argv[]) {
     // Insert all the records into the tree
     // Using an index based on <sorting_attributes> => COMPARATOR!
     char line[MAX_LINE_LEN];
+    long unique_counter = 0;
+
 	while(fgets(line, MAX_LINE_LEN, in_fp)) 
 	{
-		// TODO: Deal with unique keys!!
-		string key = get_key(line, &schema);
+		// Put in a unique key (use a counter)
+		string key = get_key(line, &schema, unique_counter);
 		leveldb::Status s = db->Put(leveldb::WriteOptions(), key, line);
 		if (!s.ok())
 		{
 			cerr << "Cannot insert: " << key << " " << s.ToString() << endl;
 		}
+		unique_counter++;
 	}
 
 	FILE *out_fp = fopen(output_file, "w");
