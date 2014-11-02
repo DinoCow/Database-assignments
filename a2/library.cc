@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+#include <algorithm>
 
 #include "library.h"
 const int MAX_LINE_LEN = 10000;
@@ -13,6 +14,7 @@ int cstr_cmp(const void *a, const void *b){
 	return strcmp((const char*)a,(const char*)b);
 }
 
+
 void sort_and_write(char *buf, int num_records, Schema *schema, FILE *out_fp){
 	
 	//refactor this.
@@ -20,8 +22,9 @@ void sort_and_write(char *buf, int num_records, Schema *schema, FILE *out_fp){
   	for (size_t i = 0; i < schema->attrs.size(); ++i) {
 		record_size += schema->attrs[i].length;
 	}
-
+	//TODO use sort(iterator, schema->comparator)
 	qsort(buf, num_records, record_size, cstr_cmp);
+
 	//TODO error checkin'
 	fwrite(buf, record_size, num_records, out_fp);
 }
@@ -39,10 +42,11 @@ void load_csv_to_buffer(char *line, Schema *schema, char *buf)
 				token; token=strtok(NULL, ","), column++) {
 		
 		// based on type in schema, put token into  buffer
-		string type = schema->attrs[column].type;
+		TYPE type = schema->attrs[column].type;
 		int length = schema->attrs[column].length;
 		//cout << type << endl;
-		if (type == "integer") {
+		// TODO switch
+		if (type == INT) {
 			int value = atoi(token);
 			int *ibuf = (int*)buf;
 			*ibuf = value;
@@ -50,7 +54,7 @@ void load_csv_to_buffer(char *line, Schema *schema, char *buf)
 			assert(value == *ibuf);
 			buf += sizeof(int);
 			
-		} else if (type == "float") {
+		} else if (type == FLOAT) {
 			float value = atof(token);
 			float *fbuf = (float*)buf;
 			*fbuf = value;
@@ -58,16 +62,16 @@ void load_csv_to_buffer(char *line, Schema *schema, char *buf)
 			assert(value == *fbuf);
 			buf += sizeof(float);
 
-		} else if (type == "string") {
+		} else if (type == STRING) {
 			strncpy(buf, token, length);
 			buf += length;
 		}
 	}
 }
 
-void mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
+int mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 {
-	int record_size = 0;
+	int record_size = 0, num_records = 0;
   	for (size_t i = 0; i < schema->attrs.size(); ++i) {
 		record_size += schema->attrs[i].length;
 	}
@@ -82,6 +86,7 @@ void mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 		if (i == run_length){
 			//sort and write all records in buffer
 			sort_and_write(buf, i, schema, out_fp);
+			num_records += i;
 			i=0; //reset counter
 		}
 	}
@@ -90,12 +95,13 @@ void mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 	if (i != 0) {
 		// sort and write the first i records in buffer
 		sort_and_write(buf, i, schema, out_fp);
+		num_records += i;
  	}
 
  	//assert outfp index == (runlength+remainder)*sizeof record
 
 	delete[] buf;
-
+	return num_records;
 }
 
 void merge_runs(RunIterator* iterators[], int num_runs, FILE *out_fp,
