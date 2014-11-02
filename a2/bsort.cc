@@ -24,7 +24,7 @@ void parseKey(vector<string>& v, string s)
 		// +1 to erase comma
 		s.erase(0, pos+1);
 	}
-	cout << endl;
+	v.push_back(s);
 }
 
 class TwoPartComparator : public leveldb::Comparator {
@@ -37,39 +37,38 @@ class TwoPartComparator : public leveldb::Comparator {
 			string token;
 			vector<string> a_vec;
 			vector<string> b_vec;
-			//cout << "A: " << a.ToString() << endl;
+
 			parseKey(a_vec, a.ToString());
-			//cout << "B: " << b.ToString() << endl;
 			parseKey(b_vec, b.ToString());
 
 			// a_vec and b_vec should have the same size
 			// Increment by two because after each value is followed by its type
 			for (int i = 0; i < a_vec.size() - 1; i = i + 2)
 			{
-				//cout << "COMPARING" << a_vec[i] << " WITH " << b_vec[i] << endl;
-				//cout << "TYPE: " << a_vec[i+1] << endl;
+				string type = a_vec[i+1];
+				
 				// If a == b, interate to next value to compare
-				if (a_vec[i+1] == "integer")
+				if (type == "integer")
 				{
 					int a_int = atoi(a_vec[i].c_str());
 					int b_int = atoi(b_vec[i].c_str());
 
 					if (a_int < b_int) return -1;
-					if (a_int > b_int) return +1;
+					if (a_int > b_int) return 1;
 				}
-				else if (a_vec[i+1] == "float")
+				else if (type == "float")
 				{
 					float a_float = atof(a_vec[i].c_str());
 					float b_float = atof(b_vec[i].c_str());
 
 					if (a_float < b_float) return -1;
-					if (a_float > b_float) return +1;
+					if (a_float > b_float) return 1;
 				}
-				else if (a_vec[i+1] == "string")
+				else if (type == "string")
 				{
 					int cmp = a_vec[i].compare(b_vec[i]);
 					if (cmp < 0) return -1;
-					if (cmp > 0) return +1;
+					if (cmp > 0) return 1;
 				}
 			}
 
@@ -139,7 +138,13 @@ string get_key(char *line, Schema *schema)
 
 		// Use comma for type again because 
 		// no guarantee other delimiters won't be in the data itself
-		key = key + attribute + "," + schema->attrs[attrs_idx].type;
+		TYPE type = schema->attrs[attrs_idx].type;
+		if (type == INT)
+			key = key + attribute + "," + "integer";
+		else if (type == FLOAT)
+			key = key + attribute + "," + "float";
+		else if (type == STRING)
+			key = key + attribute + "," + "string";
 	}
 
 	return key;
@@ -181,7 +186,18 @@ int main(int argc, const char* argv[]) {
 	    attr_type = json_value[i].get("type", "UTF-8").asString();
 	    attr_len = json_value[i].get("length", "UTF-8").asInt();
 
-	    Attribute attr = {attr_name, attr_type, attr_len};
+	    Attribute attr;
+	    attr.name = attr_name;
+	    attr.length = attr_len;
+	    if (attr_type == "interger"){
+	      attr.type = INT;
+	    } else if (attr_type == "float") {
+	      attr.type = FLOAT;
+	    } else if (attr_type == "string") {
+	      attr.type = STRING;
+	    } else {
+	      //TODO error
+	    }
 	    schema.attrs.push_back(attr);
   	}
   	set_schema_sort_attr(schema, sorting_attributes);
@@ -215,8 +231,11 @@ int main(int argc, const char* argv[]) {
 	{
 		// TODO: Deal with unique keys!!
 		string key = get_key(line, &schema);
-		cout << "key: " << key;
-		db->Put(leveldb::WriteOptions(), key, line);
+		leveldb::Status s = db->Put(leveldb::WriteOptions(), key, line);
+		if (!s.ok())
+		{
+			cerr << "Cannot insert: " << key << " " << s.ToString() << endl;
+		}
 	}
 
 	FILE *out_fp = fopen(output_file, "w");
