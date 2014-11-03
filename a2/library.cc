@@ -3,9 +3,17 @@
 #include <cstdlib>
 #include <cassert>
 #include <algorithm>
+#include <sys/timeb.h>
 
 #include "library.h"
 //const int MAX_LINE_LEN = 10000;
+
+long get_time_ms()
+{
+	struct timeb t;
+	ftime(&t);
+	return t.time * 1000 + t.millitm;
+}
 
 /* comparison function just for testing.
    need to write a proper comparator for each type

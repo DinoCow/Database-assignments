@@ -12,7 +12,7 @@
 using namespace std;
 
 // Return the key (string) as a vector string for easy traversal
-void parseKey(vector<string>& v, string s)
+void parse_key(vector<string>& v, string s)
 {
 	string token;
 	size_t pos = 0;
@@ -39,8 +39,8 @@ class SortComparator : public leveldb::Comparator {
 			vector<string> a_vec;
 			vector<string> b_vec;
 
-			parseKey(a_vec, a.ToString());
-			parseKey(b_vec, b.ToString());
+			parse_key(a_vec, a.ToString());
+			parse_key(b_vec, b.ToString());
 			int size = a_vec.size() - 1;
 
 			// a_vec and b_vec should have the same size
@@ -124,7 +124,6 @@ string get_key(char *line, Schema *schema, int unique_counter)
 	}
 
 	key = key + "," + to_string(unique_counter);
-	cout << "key: " << key << endl;
 	return key;
 }
 
@@ -155,7 +154,7 @@ void retrieve_tree(FILE *out_fp, leveldb::DB *db)
  	for (it->SeekToFirst(); it->Valid(); it->Next()) {
  		string key_str = it->key().ToString();
  		string val_str = it->value().ToString();
- 		cout << val_str;
+
  		// +1 for the null terminator
  		fwrite(val_str.c_str(), sizeof(char), val_str.length()+1, out_fp);
  	}
@@ -163,9 +162,9 @@ void retrieve_tree(FILE *out_fp, leveldb::DB *db)
  	delete it;
 }
 
+// TODO: Add timer
 int main(int argc, const char* argv[]) {
 
-	// Account for people putting spaces in sorting_attributes later (<5)
 	if (argc != 5) { 
 		cout << "ERROR: invalid input parameters!" << endl;
 		cout << "Please enter <schema_file> <input_file> <out_index> <sorting_attributes>" << endl;
@@ -174,7 +173,6 @@ int main(int argc, const char* argv[]) {
 	string schema_file(argv[1]);
   	const char* input_file = argv[2];
   	const char* output_file = argv[3];
-  	// This has to change if taking into account spaces in sorting_attributes
   	const char* sorting_attributes = argv[4]; 
 
     // Parse the schema JSON file
@@ -189,6 +187,7 @@ int main(int argc, const char* argv[]) {
     	exit(1);
   	}
 
+  	long start = get_time_ms();
   	Schema schema;
   	int total_length = 0;
 
@@ -212,6 +211,7 @@ int main(int argc, const char* argv[]) {
     leveldb::DB *db;
     leveldb::Options options;
     options.create_if_missing = true;
+    options.error_if_exists = true;
     options.comparator = &cmp;
     leveldb::Status status = leveldb::DB::Open(options, "./leveldb_dir", &db);
 
@@ -241,6 +241,8 @@ int main(int argc, const char* argv[]) {
  	fclose(in_fp);
  	fclose(out_fp);
 	delete db;
+	long end = get_time_ms();
+	cout << "TIME: " << end - start << " milliseconds" << endl;
 
 	return 0;
 }

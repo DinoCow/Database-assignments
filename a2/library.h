@@ -50,6 +50,8 @@ typedef struct {
   }
 } Record;
 
+long get_time_ms();
+
 /**
  * Creates sorted runs of length `run_length` in
  * the `out_fp`.
