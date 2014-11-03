@@ -65,7 +65,8 @@ int main(int argc, const char* argv[]) {
     attr_type = json_value[i].get("type", "UTF-8").asString();
     attr_len = json_value[i].get("length", "UTF-8").asInt();
 
-    //todo ctor
+    set_schema(attr_name, attr_type, attr_len, schema);
+    /*//todo ctor
     Attribute attr;
     attr.name = attr_name;
     attr.length = attr_len;
@@ -80,7 +81,7 @@ int main(int argc, const char* argv[]) {
     }
 
 
-    schema.attrs.push_back(attr);
+    schema.attrs.push_back(attr);*/
 
     cout << "{name : " << attr_name 
     << ", length : " << attr_len 

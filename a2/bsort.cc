@@ -8,10 +8,10 @@
 #include "leveldb/db.h"
 #include "leveldb/comparator.h"
 #include "json/json.h"
-const int MAX_LINE_LEN = 10000;
 
 using namespace std;
 
+// Return the key (string) as a vector string for easy traversal
 void parseKey(vector<string>& v, string s)
 {
 	string token;
@@ -21,19 +21,19 @@ void parseKey(vector<string>& v, string s)
 	{
 		token = s.substr(0, pos);
 		v.push_back(token);
-		// +1 to erase comma
-		s.erase(0, pos+1);
+		s.erase(0, pos+1); // +1 to erase comma
 	}
 	// The last part of "s" is the counter - we ignore it for comparison
 	v.push_back(s);
 }
 
-class TwoPartComparator : public leveldb::Comparator {
+// The comparator function for the B+ Tree
+// Three-way comparsison function:
+// 	if a < b: negative result
+//	if a > b: positive result
+// 	else: zero result
+class SortComparator : public leveldb::Comparator {
 	public: 
-		// Three-way comparsison function:
-		// 	if a < b: negative result
-		//	if a > b: positive result
-		// 	else: zero result
 		int Compare(const leveldb::Slice& a, const leveldb::Slice& b) const {
 			string token;
 			vector<string> a_vec;
@@ -75,49 +75,19 @@ class TwoPartComparator : public leveldb::Comparator {
 			}
 
 			// If the same values - base on the counter or will ignore duplicate
-			if (a_vec[size] < b_vec[size]) return -1;
-			if (a_vec[size] > b_vec[size]) return 1;
+			int last_a = atoi(a_vec[size].c_str());
+			int last_b = atoi(b_vec[size].c_str());
+			if (last_a < last_b) return -1;
+			if (last_a > last_b) return 1;
 
 			return 0;
 		}
 
-		// Ignore other functions for now
-		const char* Name() const { return "TwoPartComparator"; }
+		// Leave the other functions...
+		const char* Name() const { return "SortComparator"; }
 		void FindShortestSeparator(string*, const leveldb::Slice&) const { }
 		void FindShortSuccessor(string*) const { }
 };
-
-// Set the sort_attr vector within the schema
-void set_schema_sort_attr(Schema &schema, const char *sorting_attr)
-{
-	char *token;
-	char *attrs = const_cast<char *>(sorting_attr);
-	token = strtok(attrs, ",");
-
-	while (token != NULL) {
-		string sort_attr(token);
-		for (size_t i = 0; i < schema.attrs.size(); ++i) {
-			if (sort_attr.compare(schema.attrs[i].name) == 0)
-			{
-				schema.sort_attrs.push_back(i);
-				break;
-			}
-		}
-
-		token = strtok(NULL, ",");
-	}
-}
-
-// Returns the length from the start of the record to the indexed attribute
-int lenth_to_index(int index, Schema *schema)
-{
-	int total_length = 0;
-	for (int i = 0; i < index; ++i) {
-		// Plus 1 for the comma
-		total_length += schema->attrs[i].length + 1;
-	}
-	return total_length;
-}
 
 // Get the key for the record (line)
 // The key is the list of attributes in order of sorted_attributes
@@ -129,8 +99,8 @@ string get_key(char *line, Schema *schema, int unique_counter)
 	for (size_t i = 0; i < schema->sort_attrs.size(); ++i) 
 	{
 		// Get the length to the start of the current attribute
-		int length = lenth_to_index(schema->sort_attrs[i], schema);
 		int attrs_idx = schema->sort_attrs[i];
+		int length = schema->data_offset[attrs_idx];
 		int attr_len = schema->attrs[attrs_idx].length;
 		
 		// Get the value of the current attribute
@@ -154,7 +124,43 @@ string get_key(char *line, Schema *schema, int unique_counter)
 	}
 
 	key = key + "," + to_string(unique_counter);
+	cout << "key: " << key << endl;
 	return key;
+}
+
+// Insert the file (in_fp) into records into the b+ tree
+void insert_tree(FILE *in_fp, Schema *schema, leveldb::DB *db)
+{
+	char line[MAX_LINE_LEN];
+    long unique_counter = 0;
+
+	while(fgets(line, MAX_LINE_LEN, in_fp)) 
+	{
+		// Put in a unique key (use a counter)
+		string key = get_key(line, schema, unique_counter);
+		leveldb::Status s = db->Put(leveldb::WriteOptions(), key, line);
+		if (!s.ok())
+		{
+			cerr << "Cannot insert: " << key << " " << s.ToString() << endl;
+		}
+		unique_counter++;
+	}
+}
+
+// Retrieve the records from the b+ tree to a file (out_fp)
+void retrieve_tree(FILE *out_fp, leveldb::DB *db)
+{
+	// Get all the records and put into the outfile
+ 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+ 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+ 		string key_str = it->key().ToString();
+ 		string val_str = it->value().ToString();
+ 		cout << val_str;
+ 		// +1 for the null terminator
+ 		fwrite(val_str.c_str(), sizeof(char), val_str.length()+1, out_fp);
+ 	}
+ 	assert (it->status().ok());
+ 	delete it;
 }
 
 int main(int argc, const char* argv[]) {
@@ -184,6 +190,7 @@ int main(int argc, const char* argv[]) {
   	}
 
   	Schema schema;
+  	int total_length = 0;
 
   	// Create schema
   	string attr_name, attr_type;
@@ -193,31 +200,15 @@ int main(int argc, const char* argv[]) {
 	    attr_type = json_value[i].get("type", "UTF-8").asString();
 	    attr_len = json_value[i].get("length", "UTF-8").asInt();
 
-	    Attribute attr;
-	    attr.name = attr_name;
-	    attr.length = attr_len;
-	    if (attr_type == "interger"){
-	      attr.type = INT;
-	    } else if (attr_type == "float") {
-	      attr.type = FLOAT;
-	    } else if (attr_type == "string") {
-	      attr.type = STRING;
-	    } else {
-	      //TODO error
-	    }
-	    schema.attrs.push_back(attr);
+	    // Set the schema information
+	    int len = set_schema(attr_name, attr_type, attr_len, schema);
+	    schema.data_offset.push_back(total_length);
+	    total_length += len + 1;
   	}
   	set_schema_sort_attr(schema, sorting_attributes);
 
-  	// Open the data file
-  	FILE *in_fp = fopen(input_file, "r");
-  	if (!in_fp) {
-    	perror("Open input file");
-    	exit(1);
-  	}
-
     // Open a database connection to "./leveldb_dir"
-    TwoPartComparator cmp;
+    SortComparator cmp;
     leveldb::DB *db;
     leveldb::Options options;
     options.create_if_missing = true;
@@ -231,44 +222,24 @@ int main(int argc, const char* argv[]) {
     	exit(1);
     }
 
-    // Insert all the records into the tree
-    // Using an index based on <sorting_attributes> => COMPARATOR!
-    char line[MAX_LINE_LEN];
-    long unique_counter = 0;
-
-	while(fgets(line, MAX_LINE_LEN, in_fp)) 
-	{
-		// Put in a unique key (use a counter)
-		string key = get_key(line, &schema, unique_counter);
-		leveldb::Status s = db->Put(leveldb::WriteOptions(), key, line);
-		if (!s.ok())
-		{
-			cerr << "Cannot insert: " << key << " " << s.ToString() << endl;
-		}
-		unique_counter++;
-	}
+  	// Open the data file
+  	FILE *in_fp = fopen(input_file, "r");
+  	if (!in_fp) {
+    	perror("Open input file");
+    	exit(1);
+  	}
+    insert_tree(in_fp, &schema, db);
 
 	FILE *out_fp = fopen(output_file, "w");
   	if (!out_fp) {
     	perror("Open output file");
     	exit(1);
   	}
-
-    // Get all the records and put into the outfile
- 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
- 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
- 		string key_str = it->key().ToString();
- 		string val_str = it->value().ToString();
- 		cout << val_str;
- 		// +1 for the null terminator
- 		fwrite(val_str.c_str(), sizeof(char), val_str.length()+1, out_fp);
- 	}
- 	assert (it->status().ok());
+  	retrieve_tree(out_fp, db);
 
  	// Clean up!
  	fclose(in_fp);
  	fclose(out_fp);
- 	delete it;
 	delete db;
 
 	return 0;

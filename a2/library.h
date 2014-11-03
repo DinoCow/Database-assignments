@@ -5,6 +5,7 @@
 #include <cstring>
 
 using namespace std;
+const int MAX_LINE_LEN = 10000;
 
 class RecordComparator;
 enum TYPE {
@@ -54,6 +55,15 @@ typedef struct {
  * the `out_fp`.
  */
 int mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema);
+
+/**
+ * Sets the schema information for each attribute
+ * Returns the length of the attribute
+ */
+int set_schema(string name, string type, int len, Schema &schema);
+
+// Set the sort_attr vector within the schema
+void set_schema_sort_attr(Schema &schema, const char *sorting_attr);
 
 /**
  * The iterator helps you scan through a run.

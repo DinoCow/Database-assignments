@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "library.h"
-const int MAX_LINE_LEN = 10000;
+//const int MAX_LINE_LEN = 10000;
 
 /* comparison function just for testing.
    need to write a proper comparator for each type
@@ -108,4 +108,48 @@ void merge_runs(RunIterator* iterators[], int num_runs, FILE *out_fp,
                 long start_pos, char *buf, long buf_size)
 {
   // Your implementation
+}
+
+// Sets the schema information for each attribute
+// Returns the length of the attribute
+int set_schema(string name, string type, int len, Schema &schema)
+{
+	//todo ctor
+	Attribute attr;
+    attr.name = name;
+    attr.length = len;
+    if (type == "integer"){
+      attr.type = INT;
+    } else if (type == "float") {
+      attr.type = FLOAT;
+    } else if (type == "string") {
+      attr.type = STRING;
+    } else {
+      //TODO error
+    }
+    
+    schema.attrs.push_back(attr);
+
+    return attr.length;
+}
+
+// Set the sort_attr vector within the schema
+void set_schema_sort_attr(Schema &schema, const char *sorting_attr)
+{
+	char *token;
+	char *attrs = const_cast<char *>(sorting_attr);
+	token = strtok(attrs, ",");
+
+	while (token != NULL) {
+		string sort_attr(token);
+		for (size_t i = 0; i < schema.attrs.size(); ++i) {
+			if (sort_attr.compare(schema.attrs[i].name) == 0)
+			{
+				schema.sort_attrs.push_back(i);
+				break;
+			}
+		}
+
+		token = strtok(NULL, ",");
+	}
 }
