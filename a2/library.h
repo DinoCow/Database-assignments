@@ -166,7 +166,7 @@ public:
       if (cmp != 0){
         return cmp;
       }
-    return false; //lhs == rhs
     }
+    return false; //lhs == rhs
   }
 };

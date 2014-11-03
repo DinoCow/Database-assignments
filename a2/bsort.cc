@@ -162,7 +162,6 @@ void retrieve_tree(FILE *out_fp, leveldb::DB *db)
  	delete it;
 }
 
-// TODO: Add timer
 int main(int argc, const char* argv[]) {
 
 	if (argc != 5) { 
@@ -222,7 +221,7 @@ int main(int argc, const char* argv[]) {
     	exit(1);
     }
 
-  	// Open the data file
+  	// Open the data file and put data into btree
   	FILE *in_fp = fopen(input_file, "r");
   	if (!in_fp) {
     	perror("Open input file");
@@ -230,6 +229,7 @@ int main(int argc, const char* argv[]) {
   	}
     insert_tree(in_fp, &schema, db);
 
+    // Open output file and output sorted records
 	FILE *out_fp = fopen(output_file, "w");
   	if (!out_fp) {
     	perror("Open output file");
