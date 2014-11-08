@@ -11,21 +11,7 @@
 
 using namespace std;
 
-// Return the key (string) as a vector string for easy traversal
-void parse_key(vector<string>& v, string s)
-{
-	string token;
-	size_t pos = 0;
-
-	while ((pos = s.find(",")) != string::npos)
-	{
-		token = s.substr(0, pos);
-		v.push_back(token);
-		s.erase(0, pos+1); // +1 to erase comma
-	}
-	// The last part of "s" is the counter - we ignore it for comparison
-	v.push_back(s);
-}
+Schema schema; //make this global, so that it can be accessed by comparator
 
 // The comparator function for the B+ Tree
 // Three-way comparsison function:
@@ -38,45 +24,51 @@ class SortComparator : public leveldb::Comparator {
 			string token;
 			vector<string> a_vec;
 			vector<string> b_vec;
+			const char *a_buf = a.ToString().c_str();
+			const char *b_buf = b.ToString().c_str();
 
-			parse_key(a_vec, a.ToString());
-			parse_key(b_vec, b.ToString());
-			int size = a_vec.size() - 1;
-
-			// a_vec and b_vec should have the same size
+			int size = schema.sort_attrs.size();
+			
 			// Increment by two because after each value is followed by its type
-			for (int i = 0; i < size; i = i + 2)
+			for (int i = 0; i < size; i++)
 			{
-				string type = a_vec[i+1];
-				
+				int attrs_idx = schema.sort_attrs[i];
+				int attr_len = schema.attrs[attrs_idx].length;
+				TYPE type = schema.attrs[attrs_idx].type; 
+
 				// If a == b, interate to next value to compare
-				if (type == "integer")
+				if (type == INT)
 				{
-					int a_int = atoi(a_vec[i].c_str());
-					int b_int = atoi(b_vec[i].c_str());
+					int a_int = atoi(a_buf);
+					int b_int = atoi(b_buf);
 
 					if (a_int < b_int) return -1;
 					if (a_int > b_int) return 1;
 				}
-				else if (type == "float")
+				else if (type == FLOAT)
 				{
-					float a_float = atof(a_vec[i].c_str());
-					float b_float = atof(b_vec[i].c_str());
+					float a_float = atof(a_buf);
+					float b_float = atof(b_buf);
 
 					if (a_float < b_float) return -1;
 					if (a_float > b_float) return 1;
 				}
-				else if (type == "string")
+				else if (type == STRING)
 				{
-					int cmp = a_vec[i].compare(b_vec[i]);
+					int cmp = strcmp(a_buf, b_buf);
 					if (cmp < 0) return -1;
 					if (cmp > 0) return 1;
 				}
+
+				a_buf = a_buf + attr_len + 1;
+			 	b_buf = b_buf + attr_len + 1;
 			}
 
 			// If the same values - base on the counter or will ignore duplicate
-			int last_a = atoi(a_vec[size].c_str());
-			int last_b = atoi(b_vec[size].c_str());
+			int last_a = atoi(a_buf);
+			int last_b = atoi(b_buf);
+
+			// printf(" unique counter %i\n", last_a);
 			if (last_a < last_b) return -1;
 			if (last_a > last_b) return 1;
 
@@ -91,17 +83,17 @@ class SortComparator : public leveldb::Comparator {
 
 // Get the key for the record (line)
 // The key is the list of attributes in order of sorted_attributes
-string get_key(char *line, Schema *schema, int unique_counter) 
+string get_key(char *line, int unique_counter) 
 {
 	string key;
 
 	// For each attribute in the list of attributes we wish to sort by
-	for (size_t i = 0; i < schema->sort_attrs.size(); ++i) 
+	for (size_t i = 0; i < schema.sort_attrs.size(); ++i) 
 	{
 		// Get the length to the start of the current attribute
-		int attrs_idx = schema->sort_attrs[i];
-		int length = schema->data_offset[attrs_idx];
-		int attr_len = schema->attrs[attrs_idx].length;
+		int attrs_idx = schema.sort_attrs[i];
+		int length = schema.data_offset[attrs_idx];
+		int attr_len = schema.attrs[attrs_idx].length;
 		
 		// Get the value of the current attribute
 		char *attribute = new char[attr_len];
@@ -109,26 +101,21 @@ string get_key(char *line, Schema *schema, int unique_counter)
 		attribute[attr_len] = '\0';
 
 		// Compile the key
-		if (i > 0)
-			key = key + ",";
-
-		// Use comma for type again because 
-		// no guarantee other delimiters won't be in the data itself
-		TYPE type = schema->attrs[attrs_idx].type;
-		if (type == INT)
-			key = key + attribute + "," + "integer";
-		else if (type == FLOAT)
-			key = key + attribute + "," + "float";
-		else if (type == STRING)
-			key = key + attribute + "," + "string";
+		if (i > 0) 
+		{
+			key = key + '\0' + attribute;
+		} else 
+		{
+			key = attribute;
+		}
 	}
 
-	key = key + "," + to_string(unique_counter);
+	key = key + '\0' + to_string(unique_counter);
 	return key;
 }
 
 // Insert the file (in_fp) into records into the b+ tree
-void insert_tree(FILE *in_fp, Schema *schema, leveldb::DB *db)
+void insert_tree(FILE *in_fp, leveldb::DB *db)
 {
 	char line[MAX_LINE_LEN];
     long unique_counter = 0;
@@ -136,7 +123,8 @@ void insert_tree(FILE *in_fp, Schema *schema, leveldb::DB *db)
 	while(fgets(line, MAX_LINE_LEN, in_fp)) 
 	{
 		// Put in a unique key (use a counter)
-		string key = get_key(line, schema, unique_counter);
+		string key = get_key(line, unique_counter);
+		// printf("%s\n", key.c_str());
 		leveldb::Status s = db->Put(leveldb::WriteOptions(), key, line);
 		if (!s.ok())
 		{
@@ -187,7 +175,6 @@ int main(int argc, const char* argv[]) {
   	}
 
   	long start = get_time_ms();
-  	Schema schema;
   	int total_length = 0;
 
   	// Create schema
@@ -227,7 +214,7 @@ int main(int argc, const char* argv[]) {
     	perror("Open input file");
     	exit(1);
   	}
-    insert_tree(in_fp, &schema, db);
+    insert_tree(in_fp, db);
 
     // Open output file and output sorted records
 	FILE *out_fp = fopen(output_file, "w");
