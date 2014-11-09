@@ -123,6 +123,7 @@ int string_cmp(const void *lhs, const void *rhs);
 int int_cmp(const void *lhs, const void *rhs);
 int float_cmp(const void *lhs, const void *rhs);
 
+// TODO: move implementation to library.cc
 typedef int (*cmp_fn_t)(const void*,const void*);
 class RecordComparator {
 public:

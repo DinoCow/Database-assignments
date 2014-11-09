@@ -14,6 +14,7 @@ using namespace std;
 extern RecordComparator *rec_cmp;
 
 // TODO: move this to library.cc
+// TODO: I think this is broken. Please fix ! :)
 // perform k-way merge
 void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char *out_buf){
   Record *buf[k];
