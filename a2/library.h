@@ -118,32 +118,15 @@ void merge_runs(RunIterator* iterators[], int num_runs, FILE *out_fp,
                 long start_pos, char *buf, long buf_size);
 
 
-class Comparator {
-public:
-  virtual int operator() (const char *lhs, const char *rhs) = 0;
-};
 
-// For comparing int, float
-template <typename T>
-class NumericalComparator: public Comparator {
-  int operator() (const char *lhs, const char *rhs) {
-    return ( *(T*)lhs - *(T*)rhs );
-  }
-};
-// For comparing cstrings
-class StringComparator : public Comparator {
-  int strlen;
-public:
-  StringComparator(int length): strlen(length){};
-  int operator() (const char *lhs, const char *rhs) {
-    return strncmp(lhs, rhs, strlen);
-  }
-};
+int string_cmp(const void *lhs, const void *rhs);
+int int_cmp(const void *lhs, const void *rhs);
+int float_cmp(const void *lhs, const void *rhs);
 
-
+typedef int (*cmp_fn_t)(const void*,const void*);
 class RecordComparator {
 public:
-  vector<Comparator*> cmp_fns;
+  vector<cmp_fn_t> cmp_fns;
   Schema *schema;
   RecordComparator(const vector<Attribute> &attrs, Schema *schema) {
     this->schema = schema;
@@ -152,13 +135,13 @@ public:
                                it != schema->sort_attrs.end(); ++it){
       switch(attrs[*it].type){
         case INT:
-          cmp_fns.push_back(new NumericalComparator<int>());
+          cmp_fns.push_back(int_cmp);
           break;
         case FLOAT:
-          cmp_fns.push_back(new NumericalComparator<float>());
+          cmp_fns.push_back(float_cmp);
           break;
         case STRING:
-          cmp_fns.push_back(new StringComparator(attrs[*it].length));
+          cmp_fns.push_back(string_cmp);
           break;
       }
     }
@@ -168,20 +151,20 @@ public:
   bool operator() (const Record &lhs, const Record &rhs) {
     for (size_t i=0; i< schema->sort_attrs.size(); i++){
       //compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
-      //cout << *it << endl;
       int sort_idx = schema->sort_attrs[i];
       char lhs_attr[40], rhs_attr[40];
-      //strcpy
-      memcpy (lhs_attr, get_attr(sort_idx, lhs.data, schema), schema->attrs[sort_idx].length );
+
+      memcpy(lhs_attr, get_attr(sort_idx, lhs.data, schema), schema->attrs[sort_idx].length );
       lhs_attr[schema->attrs[i].length] = '\0';
-      memcpy (rhs_attr, get_attr(sort_idx, rhs.data, schema), schema->attrs[sort_idx].length );
+      memcpy(rhs_attr, get_attr(sort_idx, rhs.data, schema), schema->attrs[sort_idx].length );
       rhs_attr[schema->attrs[i].length] = '\0';
-      
-      Comparator *cmp_fn = cmp_fns[i];
+
+      cmp_fn_t cmp_fn = cmp_fns[i];
       bool cmp = (*cmp_fn)(lhs_attr, rhs_attr);
 
       if (cmp != 0){
         return cmp;
+
       }
     }
     return false; //lhs == rhs

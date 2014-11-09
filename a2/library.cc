@@ -14,44 +14,29 @@ long get_time_ms()
 	return t.time * 1000 + t.millitm;
 }
 
-/* comparison function just for testing.
-   need to write a proper comparator for each type
-*/
-int cstr_cmp(const void *a, const void *b){
-	return strcmp((const char*)a,(const char*)b);
-}
 
 RecordComparator *rec_cmp;
 int qsort_cmp(const void *lhs, const void *rhs){
 	//assert(rec_cmp);
-    /*
-    for (size_t i=0; i<rec_cmp->sort_attrs.size(); i++){
-      //compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
-      int sort_idx = rec_cmp->schema->sort_attrs[i];
-      Comparator *cmp_fn = rec_cmp->cmp_fns[i];
-      
-      const char *lhs_attr = (lhs, sort_idx, rec_cmp->schema);
-      const char *rhs_attr = r_rec.get_attr(sort_idx, rec_cmp->schema);
+    Schema *schema = rec_cmp->schema;
+    for (size_t i=0; i<schema->sort_attrs.size(); i++){
+		//compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
+		int sort_idx = schema->sort_attrs[i];
+		char lhs_attr[40], rhs_attr[40];
 
-      bool cmp = (*cmp_fn)( lhs_attr, rhs_attr);
+		memcpy(lhs_attr, get_attr(sort_idx, (char*)lhs, schema), schema->attrs[sort_idx].length );
+		lhs_attr[schema->attrs[i].length] = '\0';
+		memcpy(rhs_attr, get_attr(sort_idx, (char*)rhs, schema), schema->attrs[sort_idx].length );
+		rhs_attr[schema->attrs[i].length] = '\0';
 
-      if (cmp != 0){
-        return cmp;
-      }
+		cmp_fn_t cmp_fn = rec_cmp->cmp_fns[i];
+		int cmp = (*cmp_fn)(lhs_attr, rhs_attr);
+   		if (cmp != 0){
+			return cmp;
+		}
     }
-    */
     return 0; //lhs == rhs
 
-}
-
-void sort_and_write(char *buf, int num_records, Schema *schema, FILE *out_fp){
-	
-	size_t record_size = schema->record_size;
-	
-	qsort(buf, num_records, record_size, qsort_cmp);
-
-	//TODO error checkin'
-	assert(fwrite(buf, record_size, num_records, out_fp) == (size_t)num_records);
 }
 
 
@@ -62,44 +47,6 @@ void write_records(RunIterator *it, FILE *out_fp, Schema *schema){
 	}
 }
 
-/*
- * Split line on ',' and insert tokens into record
- */
-void load_csv_to_buffer(char *line, Schema *schema, char *buf)
-{
-	char *token;
-	int column = 0;
-	
-	for (token = strtok(line, ","), column = 0;
-				token; token=strtok(NULL, ","), column++) {
-		
-		// based on type in schema, put token into  buffer
-		TYPE type = schema->attrs[column].type;
-		int length = schema->attrs[column].length;
-		// TODO switch
-		if (type == INT) {
-			int value = atoi(token);
-			int *ibuf = (int*)buf;
-			*ibuf = value;
-			//cout << *ibuf << endl;
-			assert(value == *ibuf);
-			buf += sizeof(int);
-			
-		} else if (type == FLOAT) {
-			float value = atof(token);
-			float *fbuf = (float*)buf;
-			*fbuf = value;
-			//cout << *fbuf << endl;
-			assert(value == *fbuf);
-			buf += sizeof(float);
-
-		} else if (type == STRING) {
-			strncpy(buf, token, length);
-			buf += length;
-		}
-	}
-}
-
 int mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 {
 	int num_records = 0;
@@ -107,7 +54,7 @@ int mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 	char *buf = new char[run_length*record_size];
 	
 	while((rd = fread(buf, record_size, run_length, in_fp)) != 0){
-		qsort(buf, rd, record_size, cstr_cmp);
+		qsort(buf, rd, record_size, qsort_cmp);
 		fwrite(buf, record_size, rd, out_fp);
 		num_records += rd;
 	}
@@ -218,8 +165,22 @@ bool RunIterator::has_next(){
 
 char *get_attr(int i, char *data, Schema *schema){
   char *start = data;
+  //TODO this could be optimized with schema->data_offset
   for (int j=0; j < i; j++){
     start += schema->attrs[j].length+1; // +1 for comma
   }
   return start;
+}
+
+int int_cmp(const void *lhs, const void *rhs){
+	return (atoi((char*)lhs) - atoi((char*)rhs));
+}
+int float_cmp(const void *lhs, const void *rhs){
+  	float fl = atof((char*)lhs);
+  	float fr = atof((char*)rhs);
+  	return (fl > fr) - (fl < fr);
+}
+
+int string_cmp(const void *lhs, const void *rhs){
+	return strcmp((char*)lhs, (char*)rhs);
 }

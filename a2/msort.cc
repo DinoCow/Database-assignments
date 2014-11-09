@@ -123,7 +123,7 @@ int main(int argc, const char* argv[]) {
   swap(tmp_in_fp, tmp_out_fp);
 
   // divide avail. memory into k + 1 chunks
-  // TODO 1 is for merge output buffer
+  // TODO 1 is for merge output buffer. Try to use setbuf() on tmp_out_fp ??
   const int buf_size = mem_capacity / (k+1);
   char *merge_buf = new char[buf_size];
   
@@ -174,7 +174,7 @@ int main(int argc, const char* argv[]) {
 
   /*************************************************************
     TODO: no need for this, since tmp_in_fp is exactly sorted.
-      Just move the tmp input file to output file name.
+    TODO: Just move the tmp input file to output file name.
   */
   RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
