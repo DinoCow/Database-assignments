@@ -168,9 +168,8 @@ public:
       cmp_fn_t cmp_fn = cmp_fns[i];
       int cmp = (*cmp_fn)(lhs_attr, rhs_attr);
 
-      if (cmp < 0){
-        return true;
-
+      if (cmp != 0){
+        return (cmp < 0);
       }
     }
     return false; //lhs == rhs
