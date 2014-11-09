@@ -21,7 +21,7 @@ int cstr_cmp(const void *a, const void *b){
 	return strcmp((const char*)a,(const char*)b);
 }
 
-extern RecordComparator *rec_cmp;
+RecordComparator *rec_cmp;
 int qsort_cmp(const void *lhs, const void *rhs){
 	//assert(rec_cmp);
     Record r_rec, l_rec;

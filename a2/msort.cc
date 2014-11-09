@@ -11,7 +11,7 @@
 using namespace std;
 
 // Evil global
-RecordComparator *rec_cmp;
+extern RecordComparator *rec_cmp;
 
 // <algorithm> std::swap also works
 static void swap_fp(FILE **a, FILE **b){
@@ -51,9 +51,8 @@ int main(int argc, const char* argv[]) {
   Schema schema;
   // Print out the schema
   string attr_name, attr_type;
-  int attr_len;
-  int offset = 0;
-  for (int i = 0; i < json_value.size(); ++i) {
+  int attr_len, n_json = json_value.size();
+  for (int i = 0; i < n_json; ++i) {
     attr_name = json_value[i].get("name", "UTF-8").asString();
     attr_type = json_value[i].get("type", "UTF-8").asString();
     attr_len = json_value[i].get("length", "UTF-8").asInt();
@@ -105,7 +104,7 @@ int main(int argc, const char* argv[]) {
   // divide avail. memory into k + 1 chunks
   // TODO 1 is for merge output buffer
   const int buf_size = mem_capacity / (k+1);
-  char *merge_buf = new char[buf_size];
+  //char *merge_buf = new char[buf_size];
   
 
   //for debug
@@ -138,24 +137,18 @@ int main(int argc, const char* argv[]) {
           buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
           unprocessed -= n;
         }
-        /*
+        
         // perform k-way merge
         Record *min_rec = NULL;
         int min_idx = -1;
         do {
           for (int i = 0; i < k; i++){
             if (buf[i]) {
-              if (min_rec){
-                if ((*rec_cmp)(*buf[i], *min_rec)) {
+              if (!min_rec || ((*rec_cmp)(*buf[i], *min_rec)) ) {
                   //buf[i] < minrec
                   min_rec = buf[i];
                   min_idx = i;
                 } 
-              }else {
-                min_rec = buf[i];
-                min_idx = i;
-                
-              }
             }
           }
           assert(0 <= min_idx  && min_idx < k);
@@ -164,7 +157,7 @@ int main(int argc, const char* argv[]) {
                          iterators[min_idx]->next() : NULL;
  
         } while(count(buf, buf+k, (Record*)NULL) == k);
-        */
+        
         // Free Iterators
         for (int i=0; i<k; i++){
           delete iterators[i];
@@ -180,7 +173,7 @@ int main(int argc, const char* argv[]) {
   RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
   FILE *out_fp = fopen(output_file, "w");
-  //write_sorted_records(full_iterator, out_fp, &schema);
+  write_sorted_records(full_iterator, out_fp, &schema);
   
   fclose(tmp_in_fp);
   fclose(tmp_out_fp);

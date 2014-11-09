@@ -130,7 +130,6 @@ public:
 template <typename T>
 class NumericalComparator: public Comparator {
   int operator() (const char *lhs, const char *rhs) {
-    //TODO c-style comparator
     return ( *(T*)lhs - *(T*)rhs );
   }
 };
