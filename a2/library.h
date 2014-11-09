@@ -166,10 +166,10 @@ public:
       rhs_attr[schema->attrs[i].length] = '\0';
 
       cmp_fn_t cmp_fn = cmp_fns[i];
-      bool cmp = (*cmp_fn)(lhs_attr, rhs_attr);
+      int cmp = (*cmp_fn)(lhs_attr, rhs_attr);
 
-      if (cmp != 0){
-        return cmp;
+      if (cmp < 0){
+        return true;
 
       }
     }

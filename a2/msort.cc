@@ -139,7 +139,7 @@ int main(int argc, const char* argv[]) {
   int pass = 0;
 
   // n is the current length of sorted segments
-  for (int n = run_length; n < num_records; n = n * k){
+  for (int n = run_length; n < num_records*k; n = n * k){
     cout << "Pass: " << pass++ << " n: " << n << " k: " << k 
       << " runlength: " << run_length << " numrec: " << num_records << endl;
    
