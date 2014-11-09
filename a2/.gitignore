@@ -1,1 +1,6 @@
 experiment/data
+.DS_Store
+*.dSYM
+*/*.png
+leveldb_dir
+
