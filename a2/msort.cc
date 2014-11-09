@@ -179,7 +179,7 @@ int main(int argc, const char* argv[]) {
   RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
   FILE *out_fp = fopen(output_file, "w");
-  write_sorted_records(full_iterator, out_fp, &schema);
+  write_records(full_iterator, out_fp, &schema);
   fclose(out_fp);
   /************************************************************/
 

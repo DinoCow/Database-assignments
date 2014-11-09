@@ -189,4 +189,4 @@ public:
 };
 
 
-void write_sorted_records(RunIterator *it, FILE *out_fp, Schema *schema);
+void write_records(RunIterator *it, FILE *out_fp, Schema *schema);

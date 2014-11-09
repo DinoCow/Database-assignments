@@ -55,7 +55,7 @@ void sort_and_write(char *buf, int num_records, Schema *schema, FILE *out_fp){
 }
 
 
-void write_sorted_records(RunIterator *it, FILE *out_fp, Schema *schema){
+void write_records(RunIterator *it, FILE *out_fp, Schema *schema){
 	while (it->has_next()){
 		Record *rec = it->next();
 		fwrite(rec->data, schema->record_size, 1, out_fp);
