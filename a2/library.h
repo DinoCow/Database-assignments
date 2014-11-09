@@ -31,7 +31,6 @@ typedef struct {
 typedef struct {
   vector<Attribute> attrs;
   vector<int> sort_attrs;
-  vector<int> data_offset;
   size_t record_size;
 } Schema;
 
@@ -40,14 +39,12 @@ typedef struct {
  */
 typedef struct {
   char* data;
-
-  char *get_attr(int index, Schema *schema) const {
-    int offset = schema->data_offset[index];
-    return data + offset;
-  }
 } Record;
 
 long get_time_ms();
+
+
+char *get_attr(int i, char *data, Schema *schema);
 
 /**
  * Creates sorted runs of length `run_length` in
@@ -146,15 +143,13 @@ public:
 
 class RecordComparator {
 public:
-  vector<int> sort_attrs;
   vector<Comparator*> cmp_fns;
   Schema *schema;
-  RecordComparator(const vector<Attribute> &attrs, const char *sorting_attributes, Schema *schema) {
+  RecordComparator(const vector<Attribute> &attrs, Schema *schema) {
     this->schema = schema;
-    //TODO fill sort attr
-    sort_attrs.push_back(3);//cGPA
 
-    for (vector<int>::iterator it = sort_attrs.begin(); it != sort_attrs.end(); ++it){
+    for (vector<int>::iterator it = schema->sort_attrs.begin();
+                               it != schema->sort_attrs.end(); ++it){
       switch(attrs[*it].type){
         case INT:
           cmp_fns.push_back(new NumericalComparator<int>());
@@ -171,13 +166,17 @@ public:
 
   // Return true iff lhs < rhs
   bool operator() (const Record &lhs, const Record &rhs) {
-    for (size_t i=0; i<sort_attrs.size(); i++){
+    for (size_t i=0; i< schema->sort_attrs.size(); i++){
       //compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
       //cout << *it << endl;
-      int sort_idx = sort_attrs[i];
-      const char *lhs_attr = lhs.get_attr(sort_idx, schema);
-      const char *rhs_attr = rhs.get_attr(sort_idx, schema);
-
+      int sort_idx = schema->sort_attrs[i];
+      char lhs_attr[40], rhs_attr[40];
+      //strcpy
+      memcpy (lhs_attr, get_attr(sort_idx, lhs.data, schema), schema->attrs[sort_idx].length );
+      lhs_attr[schema->attrs[i].length] = '\0';
+      memcpy (rhs_attr, get_attr(sort_idx, rhs.data, schema), schema->attrs[sort_idx].length );
+      rhs_attr[schema->attrs[i].length] = '\0';
+      
       Comparator *cmp_fn = cmp_fns[i];
       bool cmp = (*cmp_fn)(lhs_attr, rhs_attr);
 

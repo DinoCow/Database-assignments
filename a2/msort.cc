@@ -13,12 +13,32 @@ using namespace std;
 // Evil global
 extern RecordComparator *rec_cmp;
 
-// <algorithm> std::swap also works
-static void swap_fp(FILE **a, FILE **b){
-  FILE *tmp = *a;
-  *a = *b;
-  *b = tmp;
+// TODO: move this to library.cc
+// perform k-way merge
+void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char *out_buf){
+  Record *buf[k];
+  for (int i = 0; i < k; i++){
+    buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
+  }
+
+  while(count(buf, buf+k, (Record*)NULL) != k) {
+    Record *min_rec = NULL;
+    int min_idx = -1;
+    for (int i = 0; i < k; i++){
+      if (buf[i] && (!min_rec || ((*rec_cmp)(*buf[i], *min_rec)) )) {
+        //buf[i] < minrec
+        min_rec = buf[i];
+        min_idx = i;
+      } 
+    }
+  
+    fwrite(min_rec->data, schema.record_size, 1, fp);
+    buf[min_idx] = iterators[min_idx]->has_next() ? 
+                   iterators[min_idx]->next() : NULL;
+
+  }
 }
+
 
 int main(int argc, const char* argv[]) {
   if (argc < 7) {
@@ -34,7 +54,8 @@ int main(int argc, const char* argv[]) {
   const char* sorting_attributes = argv[6];
 
   assert(mem_capacity>0);
-  assert(k>0);
+  //TODO  Memleak? when k=1. fix this.
+  assert(k>1);
 
   // Parse the schema JSON file
   Json::Value json_value;
@@ -70,7 +91,9 @@ int main(int argc, const char* argv[]) {
     schema.record_size += schema.attrs[i].length + 1;
   }
   
-  rec_cmp = new RecordComparator(schema.attrs, sorting_attributes, &schema);
+  set_schema_sort_attr(schema, sorting_attributes);
+  
+  rec_cmp = new RecordComparator(schema.attrs, &schema);
   
   // Do the sort
 
@@ -80,12 +103,12 @@ int main(int argc, const char* argv[]) {
     exit(1);
   }
   // Maybe use tmpfile() but for now it's good for debugging
-  FILE *tmp_out_fp = fopen("/tmp/output", "w");
+  FILE *tmp_out_fp = fopen("/tmp/output", "w+");
   if (!tmp_out_fp) {
     perror("Open temporary output file");
     exit(1);
   }
-  FILE *tmp_in_fp = fopen("/tmp/input", "w");
+  FILE *tmp_in_fp = fopen("/tmp/input", "w+");
   if (!tmp_in_fp) {
     perror("Open temporary input file");
     exit(1);
@@ -95,16 +118,14 @@ int main(int argc, const char* argv[]) {
   const long run_length = mem_capacity / schema.record_size;  
   const int num_records = mk_runs(in_fp, tmp_out_fp, run_length, &schema);
   
-  cout << run_length << ", " << num_records << endl;
-
   // swap the file pointers so the n-sorted segments become tmp_in_fp
   // this makes the part below easier to understand.
-  swap_fp(&tmp_in_fp, &tmp_out_fp);
+  swap(tmp_in_fp, tmp_out_fp);
 
   // divide avail. memory into k + 1 chunks
   // TODO 1 is for merge output buffer
   const int buf_size = mem_capacity / (k+1);
-  //char *merge_buf = new char[buf_size];
+  char *merge_buf = new char[buf_size];
   
 
   //for debug
@@ -116,7 +137,6 @@ int main(int argc, const char* argv[]) {
       << " runlength: " << run_length << " numrec: " << num_records << endl;
    
     RunIterator *iterators[k];
-    Record* buf[k];
 
     long unprocessed = num_records;
     // n * k lines processed at a time
@@ -131,32 +151,15 @@ int main(int argc, const char* argv[]) {
           } else {
              length = n;
           }
+
           iterators[i] = new RunIterator(tmp_in_fp, offset+i*n, 
             length, buf_size, &schema);
 
-          buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
           unprocessed -= n;
         }
         
         // perform k-way merge
-        Record *min_rec = NULL;
-        int min_idx = -1;
-        do {
-          for (int i = 0; i < k; i++){
-            if (buf[i]) {
-              if (!min_rec || ((*rec_cmp)(*buf[i], *min_rec)) ) {
-                  //buf[i] < minrec
-                  min_rec = buf[i];
-                  min_idx = i;
-                } 
-            }
-          }
-          assert(0 <= min_idx  && min_idx < k);
-          fwrite(min_rec->data, schema.record_size, 1, tmp_out_fp);
-          buf[min_idx] = iterators[min_idx]->has_next() ? 
-                         iterators[min_idx]->next() : NULL;
- 
-        } while(count(buf, buf+k, (Record*)NULL) == k);
+        kway_merge(iterators, k, tmp_out_fp, schema, merge_buf);
         
         // Free Iterators
         for (int i=0; i<k; i++){
@@ -166,18 +169,23 @@ int main(int argc, const char* argv[]) {
 
     // tmp_out_fp is kn sorted
     rewind(tmp_out_fp);rewind(tmp_in_fp);
-    swap_fp(&tmp_in_fp, &tmp_out_fp);
+    swap(tmp_in_fp, tmp_out_fp);
   }
 
-
+  /*************************************************************
+    TODO: no need for this, since tmp_in_fp is exactly sorted.
+      Just move the tmp input file to output file name.
+  */
   RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
   FILE *out_fp = fopen(output_file, "w");
   write_sorted_records(full_iterator, out_fp, &schema);
-  
+  fclose(out_fp);
+  /************************************************************/
+
+
   fclose(tmp_in_fp);
   fclose(tmp_out_fp);
-  fclose(out_fp);
-
+  
   return 0;
 }

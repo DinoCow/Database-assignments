@@ -24,19 +24,13 @@ int cstr_cmp(const void *a, const void *b){
 RecordComparator *rec_cmp;
 int qsort_cmp(const void *lhs, const void *rhs){
 	//assert(rec_cmp);
-    Record r_rec, l_rec;
-    r_rec.data = (char*)rhs;
-	l_rec.data = (char*)lhs;
-
-	//TODO
-    //return (*rec_cmp(l_rec, r_rec)) ? -1 : 1;
-
+    /*
     for (size_t i=0; i<rec_cmp->sort_attrs.size(); i++){
       //compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
-      int sort_idx = rec_cmp->sort_attrs[i];
+      int sort_idx = rec_cmp->schema->sort_attrs[i];
       Comparator *cmp_fn = rec_cmp->cmp_fns[i];
       
-      const char *lhs_attr = l_rec.get_attr(sort_idx, rec_cmp->schema);
+      const char *lhs_attr = (lhs, sort_idx, rec_cmp->schema);
       const char *rhs_attr = r_rec.get_attr(sort_idx, rec_cmp->schema);
 
       bool cmp = (*cmp_fn)( lhs_attr, rhs_attr);
@@ -45,6 +39,7 @@ int qsort_cmp(const void *lhs, const void *rhs){
         return cmp;
       }
     }
+    */
     return 0; //lhs == rhs
 
 }
@@ -63,25 +58,7 @@ void sort_and_write(char *buf, int num_records, Schema *schema, FILE *out_fp){
 void write_sorted_records(RunIterator *it, FILE *out_fp, Schema *schema){
 	while (it->has_next()){
 		Record *rec = it->next();
-		int num_attrs = schema->attrs.size();
-		for(int i=0; i< num_attrs; i++){
-			int len = schema->attrs[i].length;
-			void *val = rec->get_attr(i, schema);
-			switch(schema->attrs[i].type) {
-			case INT:
-				fprintf(out_fp, "%d", *(int*)val);
-				cout << *(int*)val << endl;
-				break;
-			case FLOAT:
-				fprintf(out_fp, "%f", *(float*)val);
-				break;
-			case STRING:
-				fwrite(rec->get_attr(i, schema), sizeof(char), len, out_fp);
-				break;
-			}
-			if (i != num_attrs-1) fputs(",", out_fp);
-		}
-		fputs("\n", out_fp);
+		fwrite(rec->data, schema->record_size, 1, out_fp);
 	}
 }
 
@@ -203,26 +180,28 @@ void set_schema_sort_attr(Schema &schema, const char *sorting_attr)
 * reads the next record
 */
 Record* RunIterator::next(){
+
 	size_t record_size = schema->record_size;
-	//TODO verify
-	if (  pos > buf_no*rec_per_buf   ){
-		
-		long offset = start_pos + buf_no * record_size;
-		
+	if (  pos % rec_per_buf == 0 ){	
+		long offset = (start_pos + buf_no * rec_per_buf) * record_size;
+		//cout << "Offset: "<< offset << endl;
 		if (fseek(fp, offset, SEEK_SET) != 0){
 			perror("fseek");
 			exit(1);
 		}
-		size_t sz = fread(read_buf, buf_size, 1, fp);
-		//TODO
-		//cout <<"sz:"<< sz << endl;
-		//cout <<"bs:"<< buf_size << endl;
-		// /assert(sz==buf_size);
+		fread(read_buf, record_size, rec_per_buf, fp);
 		buf_no++;
 	}
 	Record *rec = new Record();
-	rec->data = &read_buf[(record_size * pos) % buf_size];
-	//rec->schema = schema;
+	
+	rec->data = &read_buf[(pos % rec_per_buf) * record_size];
+	
+	/*
+	char debug[100];
+	strncpy(debug, rec->data, record_size);
+	debug[record_size] = '\0';
+	printf(debug);
+	*/
 	pos++;
 	return rec;
 }
@@ -235,3 +214,12 @@ bool RunIterator::has_next(){
 	return pos < run_length;
 }
 
+
+
+char *get_attr(int i, char *data, Schema *schema){
+  char *start = data;
+  for (int j=0; j < i; j++){
+    start += schema->attrs[j].length+1; // +1 for comma
+  }
+  return start;
+}
