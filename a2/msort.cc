@@ -4,7 +4,6 @@
 #include <fstream>
 #include <cassert>
 #include <algorithm>
-#include <fcntl.h>
 
 #include "library.h"
 #include "json/json.h"
@@ -178,7 +177,7 @@ int main(int argc, const char* argv[]) {
     /*************************************************************
     TODO: no need for this, since tmp_in_fp is exactly sorted.
     TODO: Just move the tmp input file to output file name.
-  */
+  // */
   // RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
   // FILE *out_fp = fopen(output_file, "w");
@@ -190,18 +189,29 @@ int main(int argc, const char* argv[]) {
   // fclose(out_fp);
   /************************************************************/
 
-  char file_path[255];
-  int fno = fileno(tmp_in_fp);
-  if (fcntl(fno, F_GETPATH, file_path) == -1)
+  //breaks in mac
+  int MAXSIZE = 0xFFF;
+  char proclnk[0xFFF];
+  char filename[0xFFF];
+  int fno;
+  ssize_t r;
+  fno = fileno(tmp_in_fp);
+  sprintf(proclnk, "/proc/self/fd/%d", fno);
+  r = readlink(proclnk, filename, MAXSIZE);
+  if (r < 0)
   {
-    //ERROR
+      printf("failed to readlink\n");
+      exit(1);
   }
+
+  filename[r] = '\0';
+  printf("fp -> fno -> filename: %p -> %d -> %s\n",
+          tmp_in_fp, fno, filename);
 
   fclose(tmp_in_fp);
   fclose(tmp_out_fp);
 
-  printf("file: %s\n", file_path);
-  std::ifstream  src(file_path);
+  std::ifstream  src(filename);
   std::ofstream  dst(output_file);
 
   dst << src.rdbuf();
