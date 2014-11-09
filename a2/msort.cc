@@ -4,7 +4,6 @@
 #include <fstream>
 #include <cassert>
 #include <algorithm>
-#include <sys/syslimits.h>
 #include <fcntl.h>
 
 #include "library.h"
@@ -200,7 +199,7 @@ int main(int argc, const char* argv[]) {
 
   fclose(tmp_in_fp);
   fclose(tmp_out_fp);
-  
+
   printf("file: %s\n", file_path);
   std::ifstream  src(file_path);
   std::ofstream  dst(output_file);
