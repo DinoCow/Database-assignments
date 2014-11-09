@@ -3,11 +3,15 @@
 #include <iostream>
 #include <fstream>
 #include <cassert>
+#include <algorithm>
 
 #include "library.h"
 #include "json/json.h"
 
 using namespace std;
+
+// Evil global
+RecordComparator *rec_cmp;
 
 // <algorithm> std::swap also works
 static void swap_fp(FILE **a, FILE **b){
@@ -56,42 +60,54 @@ int main(int argc, const char* argv[]) {
   }
 
   Schema schema;
-
   // Print out the schema
   string attr_name, attr_type;
   int attr_len;
+  int offset = 0;
   for (int i = 0; i < json_value.size(); ++i) {
     attr_name = json_value[i].get("name", "UTF-8").asString();
     attr_type = json_value[i].get("type", "UTF-8").asString();
     attr_len = json_value[i].get("length", "UTF-8").asInt();
 
-    set_schema(attr_name, attr_type, attr_len, schema);
-    /*//todo ctor
-    Attribute attr;
-    attr.name = attr_name;
-    attr.length = attr_len;
-    if (attr_type == "interger"){
-      attr.type = INT;
-    } else if (attr_type == "float") {
-      attr.type = FLOAT;
-    } else if (attr_type == "string") {
-      attr.type = STRING;
-    } else {
-      //TODO error
-    }
-
-
-    schema.attrs.push_back(attr);*/
-
     cout << "{name : " << attr_name 
     << ", length : " << attr_len 
     << ", type : " << attr_type 
     << "}" << endl;
+
+    //set_schema(attr_name, attr_type, attr_len, schema);
+
+    Attribute attr;
+    attr.name = attr_name;
+    attr.length = attr_len;
+    if (attr_type == "integer"){
+      attr.type = INT;
+      schema.data_offset.push_back(offset);
+      offset += sizeof(int);
+    } else if (attr_type == "float") {
+      attr.type = FLOAT;
+      schema.data_offset.push_back(offset);
+      offset += sizeof(float);
+    } else if (attr_type == "string") {
+      attr.type = STRING;
+      schema.data_offset.push_back(offset);
+      offset += attr_len;
+    } else {
+      //TODO error
+    }
+    
+    schema.attrs.push_back(attr);
   }
 
-  schema.comparator = new RecordComparator(schema.attrs, sorting_attributes);
+  schema.record_size = 0;
+  for (size_t i = 0; i < schema.attrs.size(); ++i) {
+    cout << schema.data_offset[i] << endl;
+    schema.record_size += schema.attrs[i].length;
+  }
 
 
+
+  rec_cmp = new RecordComparator(schema.attrs, sorting_attributes, &schema);
+  
   // Do the sort
 
   FILE *in_fp = fopen(input_file, "r");
@@ -129,55 +145,82 @@ int main(int argc, const char* argv[]) {
   //  long output_pos = 0;
   //  long start_pos = 0;
 
-// n is the current length of sorted segments
+
+  //for debug
+  int pass = 0;
+
+  // n is the current length of sorted segments
   for (int n = run_length; n < num_records; n = n * k){
+
+    pass++;
+    cout << "Pass: " << pass << " n: " << n << " k: " << k 
+      << " runlength: " << run_length << " numrec: " << num_records << endl;
     //merge(D,E,n)// E is kn sorted
-    /**************************************
 
     RunIterator *iterators[k];
     Record* buf[k];
  
+
     for(int offset=0; offset < num_records; offset += n*k) {
         // initialize streams and merge buffer
         for (int i = 0; i < k; i++){
           // TODO adjust n size of thingo
-          iterators[k] = new RunIterator(tmp_in_fp, offset+i*n, 
+          iterators[i] = new RunIterator(tmp_in_fp, offset+i*n, 
             n, buf_size, &schema);
 
-          if (iterators[i]->has_next()) {
-            min_heap.push(iterators[i]->next());
-          }
-          buf[i] = iterators[i]->has_next() ? iterators[i]->next() : inf;
-          //start_pos += run_length;
+          buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
         }
 
         // perform (up to) k-way merge
         //merge_runs(iterators, k, tmp_out_fp, output_pos, merge_buf, buf_size);
-        int min_val, min_idx;
+        Record *min_rec = NULL;
+        int min_idx = -1;
         do {
-            min_val, min_idx = get_minimum(buf);
-
-            //fwrite(buf, record_size, num_records, out_fp);
-            buf[min_idx] = iterators[min_idx].next();
+          for (int i = 0; i < k; i++){
+            if (buf[i]) {
+              if (min_rec){
+                if ((*rec_cmp)(*buf[i], *min_rec)) {
+                  //buf[i] < minrec
+                  min_rec = buf[i];
+                  min_idx = i;
+                  int *start_year = (int*)(buf[i])->get_attr(2, &schema);
+                  cout << *start_year << endl;
+                } 
+              }else {
+                min_rec = buf[i];
+                min_idx = i;
+                
+              }
+            }
+          }
+          assert(0 <= min_idx  && min_idx < k);
+          //fwrite(buf, schema.record_size, num_records, tmp_out_fp);
+          fwrite(min_rec->data, schema.record_size, 1, tmp_out_fp);
+          buf[min_idx] = iterators[min_idx]->has_next() ? 
+                         iterators[min_idx]->next() : NULL;
  
-        } while(!all_iterators_exhausted());
-
-
+        } while(count(buf, buf+k, (Record*)NULL) == k);
 
         // Free Iterators
         for (int i=0; i<k; i++){
-          delete iterators[k];
+          delete iterators[i];
         }
     }
-    ***************************************/
-    // tmp_out_fp is kn sorted
+
+    // tmp_out_fp is kn sortedssss
+    rewind(tmp_out_fp);rewind(tmp_in_fp);
     swap_fp(&tmp_in_fp, &tmp_out_fp);
   }
+
+
+  RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
-  //FILE *out_fp = fopen(output_file, "w");
-  //write_sorted_records(tmp_out_fp, output_file);
+  FILE *out_fp = fopen(output_file, "w");
+  //write_sorted_records(full_iterator, out_fp, &schema);
   
-  
+  fclose(tmp_in_fp);
+  fclose(tmp_out_fp);
+  fclose(out_fp);
 
   return 0;
 }

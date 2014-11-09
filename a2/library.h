@@ -7,15 +7,14 @@
 using namespace std;
 const int MAX_LINE_LEN = 10000;
 
-class RecordComparator;
+// class RecordComparator;
 enum TYPE {
   INT,
   FLOAT,
   STRING
 };
 /**
- * An attribute schema. You should probably modify
- * this to add your own fields.
+ * An attribute schema.
  */
 typedef struct {
   string name;
@@ -33,18 +32,16 @@ typedef struct {
   vector<Attribute> attrs;
   vector<int> sort_attrs;
   vector<int> data_offset;
-  RecordComparator* comparator;
+  size_t record_size;
 } Schema;
 
 /**
- * A record can defined as a struct with a pointer
- * to the schema and some data. 
+ * A record is just a pointer to data. 
  */
 typedef struct {
-  Schema* schema;
   char* data;
 
-  char* operator[] (const int index) const {
+  char *get_attr(int index, Schema *schema) const {
     int offset = schema->data_offset[index];
     return data + offset;
   }
@@ -72,6 +69,15 @@ void set_schema_sort_attr(Schema &schema, const char *sorting_attr);
  * you can add additional members as your wish
  */
 class RunIterator {
+  FILE *fp;
+  long start_pos;
+  long run_length;
+  long buf_size;
+  Schema *schema;
+  char *read_buf;
+  long pos;
+  long buf_no;
+  long rec_per_buf;
 public:
   /**
    * Creates an interator using the `buf_size` to
@@ -79,12 +85,19 @@ public:
    * with length `run_length`.
    */
   RunIterator(FILE *fp, long start_pos, long run_length, long buf_size,
-              Schema *schema);
+              Schema *schema): fp(fp), start_pos(start_pos),
+               run_length(run_length), buf_size(buf_size), schema(schema),
+               pos(0), buf_no(0){
+    read_buf = new char[buf_size];
+    rec_per_buf = buf_size / schema->record_size;
+  }
 
   /**
    * free memory
    */
-  ~RunIterator();
+  ~RunIterator(){
+    delete[] read_buf;
+  }
 
   /**
    * reads the next record
@@ -108,8 +121,6 @@ void merge_runs(RunIterator* iterators[], int num_runs, FILE *out_fp,
                 long start_pos, char *buf, long buf_size);
 
 
-
-
 class Comparator {
 public:
   virtual int operator() (const char *lhs, const char *rhs) = 0;
@@ -119,6 +130,7 @@ public:
 template <typename T>
 class NumericalComparator: public Comparator {
   int operator() (const char *lhs, const char *rhs) {
+    //TODO c-style comparator
     return ( *(T*)lhs - *(T*)rhs );
   }
 };
@@ -134,11 +146,12 @@ public:
 
 
 class RecordComparator {
+public:
   vector<int> sort_attrs;
   vector<Comparator*> cmp_fns;
-public:
-  RecordComparator(const vector<Attribute> &attrs, const char *sorting_attributes) {
-
+  Schema *schema;
+  RecordComparator(const vector<Attribute> &attrs, const char *sorting_attributes, Schema *schema) {
+    this->schema = schema;
     //TODO fill sort attr
     sort_attrs.push_back(3);//cGPA
 
@@ -159,9 +172,15 @@ public:
 
   // Return true iff lhs < rhs
   bool operator() (const Record &lhs, const Record &rhs) {
-    for (vector<int>::iterator it = sort_attrs.begin(); it != sort_attrs.end(); ++it){
+    for (size_t i=0; i<sort_attrs.size(); i++){
       //compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
-      bool cmp = (*cmp_fns[*it])(lhs[*it], rhs[*it]);
+      //cout << *it << endl;
+      int sort_idx = sort_attrs[i];
+      const char *lhs_attr = lhs.get_attr(sort_idx, schema);
+      const char *rhs_attr = rhs.get_attr(sort_idx, schema);
+
+      Comparator *cmp_fn = cmp_fns[i];
+      bool cmp = (*cmp_fn)(lhs_attr, rhs_attr);
 
       if (cmp != 0){
         return cmp;
@@ -170,3 +189,6 @@ public:
     return false; //lhs == rhs
   }
 };
+
+
+void write_sorted_records(RunIterator *it, FILE *out_fp, Schema *schema);

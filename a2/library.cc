@@ -6,7 +6,6 @@
 #include <sys/timeb.h>
 
 #include "library.h"
-//const int MAX_LINE_LEN = 10000;
 
 long get_time_ms()
 {
@@ -14,29 +13,69 @@ long get_time_ms()
 	ftime(&t);
 	return t.time * 1000 + t.millitm;
 }
+extern RecordComparator *rec_cmp;
+int qsort_cmp(const void *lhs, const void *rhs){
+	//assert(rec_cmp);
+    Record r_rec, l_rec;
+    r_rec.data = (char*)rhs;
+	l_rec.data = (char*)lhs;
 
-/* comparison function just for testing.
-   need to write a proper comparator for each type
-*/
-int cstr_cmp(const void *a, const void *b){
-	return strcmp((const char*)a,(const char*)b);
+	//TODO
+    //return (*rec_cmp(l_rec, r_rec)) ? -1 : 1;
+
+    for (size_t i=0; i<rec_cmp->sort_attrs.size(); i++){
+      //compare lhs[sort_attr] < rhs[sort_attr] using cmp_fns
+      int sort_idx = rec_cmp->sort_attrs[i];
+      Comparator *cmp_fn = rec_cmp->cmp_fns[i];
+      
+      const char *lhs_attr = l_rec.get_attr(sort_idx, rec_cmp->schema);
+      const char *rhs_attr = r_rec.get_attr(sort_idx, rec_cmp->schema);
+
+      bool cmp = (*cmp_fn)( lhs_attr, rhs_attr);
+
+      if (cmp != 0){
+        return cmp;
+      }
+    }
+    return 0; //lhs == rhs
+
 }
-
 
 void sort_and_write(char *buf, int num_records, Schema *schema, FILE *out_fp){
 	
-	//refactor this.
-	int record_size = 0;
-  	for (size_t i = 0; i < schema->attrs.size(); ++i) {
-		record_size += schema->attrs[i].length;
-	}
-	//TODO use sort(iterator, schema->comparator)
-	qsort(buf, num_records, record_size, cstr_cmp);
+	size_t record_size = schema->record_size;
+	
+	qsort(buf, num_records, record_size, qsort_cmp);
 
 	//TODO error checkin'
-	fwrite(buf, record_size, num_records, out_fp);
+	assert(fwrite(buf, record_size, num_records, out_fp) == (size_t)num_records);
 }
 
+
+void write_sorted_records(RunIterator *it, FILE *out_fp, Schema *schema){
+	while (it->has_next()){
+		Record *rec = it->next();
+		int num_attrs = schema->attrs.size();
+		for(int i=0; i< num_attrs; i++){
+			int len = schema->attrs[i].length;
+			void *val = rec->get_attr(i, schema);
+			switch(schema->attrs[i].type) {
+			case INT:
+				fprintf(out_fp, "%d", *(int*)val);
+				cout << *(int*)val << endl;
+				break;
+			case FLOAT:
+				fprintf(out_fp, "%f", *(float*)val);
+				break;
+			case STRING:
+				fwrite(rec->get_attr(i, schema), sizeof(char), len, out_fp);
+				break;
+			}
+			if (i != num_attrs-1) fputs(",", out_fp);
+		}
+		fputs("\n", out_fp);
+	}
+}
 
 /*
  * Split line on ',' and insert tokens into record
@@ -52,7 +91,6 @@ void load_csv_to_buffer(char *line, Schema *schema, char *buf)
 		// based on type in schema, put token into  buffer
 		TYPE type = schema->attrs[column].type;
 		int length = schema->attrs[column].length;
-		//cout << type << endl;
 		// TODO switch
 		if (type == INT) {
 			int value = atoi(token);
@@ -79,10 +117,8 @@ void load_csv_to_buffer(char *line, Schema *schema, char *buf)
 
 int mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 {
-	int record_size = 0, num_records = 0;
-  	for (size_t i = 0; i < schema->attrs.size(); ++i) {
-		record_size += schema->attrs[i].length;
-	}
+	int num_records = 0;
+	size_t record_size = schema->record_size;
 	char *buf = new char[run_length*record_size];
 	
 	char line[MAX_LINE_LEN];
@@ -169,3 +205,42 @@ void set_schema_sort_attr(Schema &schema, const char *sorting_attr)
 		token = strtok(NULL, ",");
 	}
 }
+
+/****************** RunIterator *********************/
+
+/**
+* reads the next record
+*/
+Record* RunIterator::next(){
+	size_t record_size = schema->record_size;
+	//TODO verify
+	if (  pos > buf_no*rec_per_buf   ){
+		
+		long offset = start_pos + buf_no * record_size;
+		
+		if (fseek(fp, offset, SEEK_SET) != 0){
+			perror("fseek");
+			exit(1);
+		}
+		size_t sz = fread(read_buf, buf_size, 1, fp);
+		//TODO
+		//cout <<"sz:"<< sz << endl;
+		//cout <<"bs:"<< buf_size << endl;
+		// /assert(sz==buf_size);
+		buf_no++;
+	}
+	Record *rec = new Record();
+	rec->data = &read_buf[(record_size * pos) % buf_size];
+	//rec->schema = schema;
+	pos++;
+	return rec;
+}
+
+/**
+* return false if iterator reaches the end
+* of the run
+*/
+bool RunIterator::has_next(){
+	return pos < run_length;
+}
+
