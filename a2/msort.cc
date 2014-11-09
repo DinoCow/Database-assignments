@@ -16,7 +16,7 @@ extern RecordComparator *rec_cmp;
 // TODO: move this to library.cc
 // TODO: I think this is broken. Please fix ! :)
 // perform k-way merge
-void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char *out_buf){
+void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema){
   Record *buf[k];
   for (int i = 0; i < k; i++){
     buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
@@ -57,7 +57,6 @@ int main(int argc, const char* argv[]) {
   const char* sorting_attributes = argv[6];
 
   assert(mem_capacity>0);
-  //TODO  Memleak? when k=1. fix this.
   assert(k>1);
 
   // Parse the schema JSON file
@@ -132,8 +131,7 @@ int main(int argc, const char* argv[]) {
   // divide avail. memory into k + 1 chunks
   // TODO 1 is for merge output buffer. Try to use setbuf() on tmp_out_fp ??
   const int buf_size = mem_capacity / (k+1);
-  char *merge_buf = new char[buf_size];
-  
+  setvbuf (tmp_out_fp, NULL, _IOFBF , buf_size);
 
   //for debug
   int pass = 0;
@@ -165,7 +163,7 @@ int main(int argc, const char* argv[]) {
         }
         
         // perform k-way merge
-        kway_merge(iterators, k, tmp_out_fp, schema, merge_buf);
+        kway_merge(iterators, k, tmp_out_fp, schema);
         
         // Free Iterators
         for (int i=0; i<k; i++){
