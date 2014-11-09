@@ -20,17 +20,6 @@ static void swap_fp(FILE **a, FILE **b){
   *b = tmp;
 }
 
-static int records_per_buffer(long mem_capacity, Schema &schema){
-
-  int record_size = 0;
-  for (size_t i = 0; i < schema.attrs.size(); ++i) {
-    record_size += schema.attrs[i].length;
-  }
-
-  return mem_capacity / record_size;
-
-}
-
 int main(int argc, const char* argv[]) {
   if (argc < 7) {
     cout << "ERROR: invalid input parameters!" << endl;
@@ -74,38 +63,14 @@ int main(int argc, const char* argv[]) {
     << ", type : " << attr_type 
     << "}" << endl;
 
-    //set_schema(attr_name, attr_type, attr_len, schema);
-
-    Attribute attr;
-    attr.name = attr_name;
-    attr.length = attr_len;
-    if (attr_type == "integer"){
-      attr.type = INT;
-      schema.data_offset.push_back(offset);
-      offset += sizeof(int);
-    } else if (attr_type == "float") {
-      attr.type = FLOAT;
-      schema.data_offset.push_back(offset);
-      offset += sizeof(float);
-    } else if (attr_type == "string") {
-      attr.type = STRING;
-      schema.data_offset.push_back(offset);
-      offset += attr_len;
-    } else {
-      //TODO error
-    }
-    
-    schema.attrs.push_back(attr);
+    set_schema(attr_name, attr_type, attr_len, schema);
   }
 
   schema.record_size = 0;
   for (size_t i = 0; i < schema.attrs.size(); ++i) {
-    cout << schema.data_offset[i] << endl;
-    schema.record_size += schema.attrs[i].length;
+    schema.record_size += schema.attrs[i].length + 1;
   }
-
-
-
+  
   rec_cmp = new RecordComparator(schema.attrs, sorting_attributes, &schema);
   
   // Do the sort
@@ -128,51 +93,53 @@ int main(int argc, const char* argv[]) {
   }
 
   // length of sorted segments
-  const long run_length = records_per_buffer(mem_capacity, schema);
+  const long run_length = mem_capacity / schema.record_size;  
   const int num_records = mk_runs(in_fp, tmp_out_fp, run_length, &schema);
   
+  cout << run_length << ", " << num_records << endl;
+
   // swap the file pointers so the n-sorted segments become tmp_in_fp
   // this makes the part below easier to understand.
   swap_fp(&tmp_in_fp, &tmp_out_fp);
 
   // divide avail. memory into k + 1 chunks
-  // 1 is for merge output buffer
+  // TODO 1 is for merge output buffer
   const int buf_size = mem_capacity / (k+1);
   char *merge_buf = new char[buf_size];
   
-
-  //const int num_runs = num_records / run_length;
-  //  long output_pos = 0;
-  //  long start_pos = 0;
-
 
   //for debug
   int pass = 0;
 
   // n is the current length of sorted segments
   for (int n = run_length; n < num_records; n = n * k){
-
-    pass++;
-    cout << "Pass: " << pass << " n: " << n << " k: " << k 
+    cout << "Pass: " << pass++ << " n: " << n << " k: " << k 
       << " runlength: " << run_length << " numrec: " << num_records << endl;
-    //merge(D,E,n)// E is kn sorted
-
+   
     RunIterator *iterators[k];
     Record* buf[k];
- 
 
+    long unprocessed = num_records;
+    // n * k lines processed at a time
     for(int offset=0; offset < num_records; offset += n*k) {
         // initialize streams and merge buffer
+        
         for (int i = 0; i < k; i++){
-          // TODO adjust n size of thingo
+          long length;
+          if (unprocessed < n){
+            length = unprocessed % n;
+            unprocessed = n;
+          } else {
+             length = n;
+          }
           iterators[i] = new RunIterator(tmp_in_fp, offset+i*n, 
-            n, buf_size, &schema);
+            length, buf_size, &schema);
 
           buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
+          unprocessed -= n;
         }
-
-        // perform (up to) k-way merge
-        //merge_runs(iterators, k, tmp_out_fp, output_pos, merge_buf, buf_size);
+        /*
+        // perform k-way merge
         Record *min_rec = NULL;
         int min_idx = -1;
         do {
@@ -183,8 +150,6 @@ int main(int argc, const char* argv[]) {
                   //buf[i] < minrec
                   min_rec = buf[i];
                   min_idx = i;
-                  int *start_year = (int*)(buf[i])->get_attr(2, &schema);
-                  cout << *start_year << endl;
                 } 
               }else {
                 min_rec = buf[i];
@@ -194,20 +159,19 @@ int main(int argc, const char* argv[]) {
             }
           }
           assert(0 <= min_idx  && min_idx < k);
-          //fwrite(buf, schema.record_size, num_records, tmp_out_fp);
           fwrite(min_rec->data, schema.record_size, 1, tmp_out_fp);
           buf[min_idx] = iterators[min_idx]->has_next() ? 
                          iterators[min_idx]->next() : NULL;
  
         } while(count(buf, buf+k, (Record*)NULL) == k);
-
+        */
         // Free Iterators
         for (int i=0; i<k; i++){
           delete iterators[i];
         }
     }
 
-    // tmp_out_fp is kn sortedssss
+    // tmp_out_fp is kn sorted
     rewind(tmp_out_fp);rewind(tmp_in_fp);
     swap_fp(&tmp_in_fp, &tmp_out_fp);
   }

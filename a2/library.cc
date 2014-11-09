@@ -13,6 +13,14 @@ long get_time_ms()
 	ftime(&t);
 	return t.time * 1000 + t.millitm;
 }
+
+/* comparison function just for testing.
+   need to write a proper comparator for each type
+*/
+int cstr_cmp(const void *a, const void *b){
+	return strcmp((const char*)a,(const char*)b);
+}
+
 extern RecordComparator *rec_cmp;
 int qsort_cmp(const void *lhs, const void *rhs){
 	//assert(rec_cmp);
@@ -118,31 +126,14 @@ void load_csv_to_buffer(char *line, Schema *schema, char *buf)
 int mk_runs(FILE *in_fp, FILE *out_fp, long run_length, Schema *schema)
 {
 	int num_records = 0;
-	size_t record_size = schema->record_size;
+	size_t record_size = schema->record_size, rd;
 	char *buf = new char[run_length*record_size];
 	
-	char line[MAX_LINE_LEN];
-	int i = 0;
-	while(fgets(line, MAX_LINE_LEN, in_fp)) {
-		
-		load_csv_to_buffer(line, schema, buf+i*record_size);
-		i++;
-		if (i == run_length){
-			//sort and write all records in buffer
-			sort_and_write(buf, i, schema, out_fp);
-			num_records += i;
-			i=0; //reset counter
-		}
+	while((rd = fread(buf, record_size, run_length, in_fp)) != 0){
+		qsort(buf, rd, record_size, cstr_cmp);
+		fwrite(buf, record_size, rd, out_fp);
+		num_records += rd;
 	}
-
-	//reach here at EOF
-	if (i != 0) {
-		// sort and write the first i records in buffer
-		sort_and_write(buf, i, schema, out_fp);
-		num_records += i;
- 	}
-
- 	//assert outfp index == (runlength+remainder)*sizeof record
 
 	delete[] buf;
 	return num_records;
