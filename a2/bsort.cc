@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <sstream>
 
 #include "library.h"
 #include "leveldb/db.h"
@@ -110,7 +111,9 @@ string get_key(char *line, int unique_counter)
 		}
 	}
 
-	key = key + '\0' + to_string(unique_counter);
+	std::stringstream ss;
+	ss << unique_counter;
+	key = key + '\0' + ss.str();
 	return key;
 }
 
