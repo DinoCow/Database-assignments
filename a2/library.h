@@ -87,7 +87,8 @@ public:
                run_length(run_length), buf_size(buf_size), schema(schema),
                pos(0), buf_no(0){
     read_buf = new char[buf_size];
-    rec_per_buf = buf_size / schema->record_size;
+    // printf("buf_size: %i, record_size: %i\n", buf_size, schema->record_size);
+    rec_per_buf = buf_size / schema->record_size; //messes up royally if buf_size <  schema->record_size
   }
 
   /**

@@ -4,6 +4,8 @@
 #include <fstream>
 #include <cassert>
 #include <algorithm>
+#include <sys/syslimits.h>
+#include <fcntl.h>
 
 #include "library.h"
 #include "json/json.h"
@@ -19,8 +21,6 @@ extern RecordComparator *rec_cmp;
 void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char *out_buf){
   Record *buf[k];
   for (int i = 0; i < k; i++){
-    printf("i: %i, k: %i\n", i, k);
-    //iterators[i] is giving trouble
     buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
   }
 
@@ -41,7 +41,6 @@ void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char 
     delete buf[min_idx];
     buf[min_idx] = iterators[min_idx]->has_next() ? 
                    iterators[min_idx]->next() : NULL;
-
   }
 }
 
@@ -177,15 +176,36 @@ int main(int argc, const char* argv[]) {
     swap(tmp_in_fp, tmp_out_fp);
   }
 
+    /*************************************************************
+    TODO: no need for this, since tmp_in_fp is exactly sorted.
+    TODO: Just move the tmp input file to output file name.
+  */
+  // RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
-  FILE *out_fp = fopen(output_file, "w");
-  swap(tmp_in_fp, out_fp);
-  fclose(out_fp);
+  // FILE *out_fp = fopen(output_file, "w");
+  // write_records(full_iterator, out_fp, &schema);
+  // fclose(out_fp);
+  
+  // FILE *out_fp = fopen(output_file, "w");
+  // swap(tmp_in_fp, out_fp);
+  // fclose(out_fp);
   /************************************************************/
 
+  char file_path[255];
+  int fno = fileno(tmp_in_fp);
+  if (fcntl(fno, F_GETPATH, file_path) == -1)
+  {
+    //ERROR
+  }
 
   fclose(tmp_in_fp);
   fclose(tmp_out_fp);
   
+  printf("file: %s\n", file_path);
+  std::ifstream  src(file_path);
+  std::ofstream  dst(output_file);
+
+  dst << src.rdbuf();
+ 
   return 0;
 }
