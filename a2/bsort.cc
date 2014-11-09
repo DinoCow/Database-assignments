@@ -124,7 +124,6 @@ void insert_tree(FILE *in_fp, leveldb::DB *db)
 	{
 		// Put in a unique key (use a counter)
 		string key = get_key(line, unique_counter);
-		// printf("%s\n", key.c_str());
 		leveldb::Status s = db->Put(leveldb::WriteOptions(), key, line);
 		if (!s.ok())
 		{

@@ -150,12 +150,20 @@ void set_schema_sort_attr(Schema &schema, const char *sorting_attr)
 
 	while (token != NULL) {
 		string sort_attr(token);
+		bool attr_found = false;
+
 		for (size_t i = 0; i < schema.attrs.size(); ++i) {
 			if (sort_attr.compare(schema.attrs[i].name) == 0)
 			{
 				schema.sort_attrs.push_back(i);
+				attr_found = true;
 				break;
 			}
+		}
+
+		if (!attr_found){
+			cout << "ERROR: invalid sorting attributes!" << endl;
+			exit(1);
 		}
 
 		token = strtok(NULL, ",");
