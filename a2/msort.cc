@@ -34,6 +34,7 @@ void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char 
     }
   
     fwrite(min_rec->data, schema.record_size, 1, fp);
+    delete buf[min_idx];
     buf[min_idx] = iterators[min_idx]->has_next() ? 
                    iterators[min_idx]->next() : NULL;
 
