@@ -65,8 +65,8 @@ from pylab import *
 
 fig, (ax0) = subplots(nrows=1)
 plot(perf_x, perf_y, marker='.', color='r', label='single attribute')
-plot(multi_perf_x, multi_perf_y, marker='o', color='b', label="multi_attributes") 
-xlabel('file size')
+plot(multi_perf_x, multi_perf_y, marker='o', color='b', label="multi attributes") 
+xlabel('file size(# tuples)')
 ylabel('time(ms)')
 ax0.set_title('bsort')
 legend()
