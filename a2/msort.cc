@@ -75,6 +75,8 @@ int main(int argc, const char* argv[]) {
   Schema schema;
   // Print out the schema
   string attr_name, attr_type;
+
+  int total_length = 0;
   int attr_len, n_json = json_value.size();
   for (int i = 0; i < n_json; ++i) {
     attr_name = json_value[i].get("name", "UTF-8").asString();
@@ -86,7 +88,9 @@ int main(int argc, const char* argv[]) {
     << ", type : " << attr_type 
     << "}" << endl;
 
-    set_schema(attr_name, attr_type, attr_len, schema);
+    int len = set_schema(attr_name, attr_type, attr_len, schema);
+    schema.data_offset.push_back(total_length);
+    total_length += len + 1;
   }
 
   schema.record_size = 0;

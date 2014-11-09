@@ -92,12 +92,12 @@ string get_key(char *line, int unique_counter)
 	{
 		// Get the length to the start of the current attribute
 		int attrs_idx = schema.sort_attrs[i];
-		int length = schema.data_offset[attrs_idx];
+		int offset = schema.data_offset[attrs_idx];
 		int attr_len = schema.attrs[attrs_idx].length;
 		
 		// Get the value of the current attribute
 		char *attribute = new char[attr_len];
-		strncpy(attribute, line+length, attr_len);
+		strncpy(attribute, line+offset, attr_len);
 		attribute[attr_len] = '\0';
 
 		// Compile the key

@@ -166,11 +166,10 @@ bool RunIterator::has_next(){
 
 char *get_attr(int i, char *data, Schema *schema){
   char *start = data;
-  //TODO this could be optimized with schema->data_offset
-  for (int j=0; j < i; j++){
-    start += schema->attrs[j].length+1; // +1 for comma
-  }
-  return start;
+
+  int offset = schema->data_offset[i];
+  start = start + offset;
+  return start ;
 }
 
 int int_cmp(const void *lhs, const void *rhs){
