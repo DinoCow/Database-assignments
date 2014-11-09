@@ -19,14 +19,18 @@ extern RecordComparator *rec_cmp;
 void kway_merge(RunIterator *iterators[], int k, FILE *fp, Schema &schema, char *out_buf){
   Record *buf[k];
   for (int i = 0; i < k; i++){
+    printf("i: %i, k: %i\n", i, k);
+    //iterators[i] is giving trouble
     buf[i] = iterators[i]->has_next() ? iterators[i]->next() : NULL;
   }
 
   while(count(buf, buf+k, (Record*)NULL) != k) {
     Record *min_rec = NULL;
     int min_idx = -1;
+    
     for (int i = 0; i < k; i++){
-      if (buf[i] && (!min_rec || ((*rec_cmp)(*buf[i], *min_rec)) )) {
+      if (buf[i] && (!min_rec || ((*rec_cmp)(*buf[i], *min_rec)) )) 
+      {
         //buf[i] < minrec
         min_rec = buf[i];
         min_idx = i;
@@ -153,7 +157,6 @@ int main(int argc, const char* argv[]) {
           } else {
              length = n;
           }
-
           iterators[i] = new RunIterator(tmp_in_fp, offset+i*n, 
             length, buf_size, &schema);
 
@@ -174,14 +177,9 @@ int main(int argc, const char* argv[]) {
     swap(tmp_in_fp, tmp_out_fp);
   }
 
-  /*************************************************************
-    TODO: no need for this, since tmp_in_fp is exactly sorted.
-    TODO: Just move the tmp input file to output file name.
-  */
-  RunIterator *full_iterator = new RunIterator(tmp_in_fp, 0, num_records, buf_size, &schema);
   
   FILE *out_fp = fopen(output_file, "w");
-  write_records(full_iterator, out_fp, &schema);
+  swap(tmp_in_fp, out_fp);
   fclose(out_fp);
   /************************************************************/
 

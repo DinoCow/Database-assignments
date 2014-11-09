@@ -69,7 +69,6 @@ class SortComparator : public leveldb::Comparator {
 			int last_a = atoi(a_buf);
 			int last_b = atoi(b_buf);
 
-			// printf(" unique counter %i\n", last_a);
 			if (last_a < last_b) return -1;
 			if (last_a > last_b) return 1;
 

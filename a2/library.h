@@ -31,6 +31,7 @@ typedef struct {
 typedef struct {
   vector<Attribute> attrs;
   vector<int> sort_attrs;
+  vector<int> data_offset;
   size_t record_size;
 } Schema;
 
