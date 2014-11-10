@@ -7,8 +7,8 @@ import shutil
 data_dir = "data/"
 schema_file = "../schema_example.json"
 out_index = "bsort_index"
-sorting_attributes= "student_number"
-multiple_sorting_attr = "student_number,cgpa"
+sorting_attributes= "start_year"
+multiple_sorting_attr = "start_year,cgpa"
 file_size = ( #file_size in terms of # of tuples
     100,
     200,
